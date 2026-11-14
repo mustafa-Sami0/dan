@@ -1,5 +1,5 @@
-// Service Worker — سجل المدرس الإلكتروني
-const CACHE = 'teacher-register-v24-firebase-2.5.6';
+// Service Worker — سجل المدرس الإلكتروني (2.7.3)
+const CACHE = 'teacher-register-v26-firebase-2.7.3';
 const CORE = ['./', './manifest.webmanifest', './icons/icon-192.png', './icons/icon-512.png'];
 
 // لا نرجّع استجابة محوّلة (redirect) لطلب تنقّل: المتصفح يرفضها ويعطي ERR_FAILED
@@ -12,7 +12,7 @@ async function clean(res) {
 self.addEventListener('install', e => {
   e.waitUntil(
     caches.open(CACHE)
-      .then(c => Promise.all(CORE.map(u => fetch(u).then(r => clean(r)).then(r => r && r.ok ? c.put(u, r) : null))))
+      .then(c => Promise.all(CORE.map(u => fetch(u).then(r => clean(r)).then(r => r && r.ok ? c.put(u, r) : null).catch(() => null))))
       .then(() => self.skipWaiting())
   );
 });
@@ -25,22 +25,35 @@ self.addEventListener('activate', e => {
   );
 });
 
-// الملفات المحلية والمكتبات الخارجية (Tailwind, الخطوط, الأيقونات): من الكاش أولاً مع تحديث بالخلفية
 self.addEventListener('fetch', e => {
   const req = e.request;
-  if (req.method !== 'GET' || req.url.includes('firestore.googleapis.com') || req.url.includes('identitytoolkit.googleapis.com')) return;
-  const isNav = req.mode === 'navigate';
-  const key = isNav ? './' : req;
+  const url = req.url;
+  if (req.method !== 'GET' || !url.startsWith('http') || url.includes('firestore.googleapis.com') || url.includes('identitytoolkit.googleapis.com') || url.includes('securetoken.googleapis.com')) return;
+
+  // صفحة التطبيق: الشبكة أولاً (يصل كل تحديث فور الاتصال)، وعند انقطاع الإنترنت النسخة المخزنة
+  if (req.mode === 'navigate') {
+    e.respondWith(
+      fetch(req)
+        .then(clean)
+        .then(out => {
+          if (out && out.ok) { const copy = out.clone(); caches.open(CACHE).then(c => c.put('./', copy)); }
+          return out;
+        })
+        .catch(() => caches.match('./').then(r => r || Response.error()))
+    );
+    return;
+  }
+
+  // بقية الملفات والمكتبات: من الكاش أولاً مع تحديث بالخلفية
   e.respondWith(
-    caches.match(key).then(cached => {
-      const network = fetch(req).then(async res => {
-        const out = await clean(res);
-        if (out && (out.ok || out.type === 'opaque')) {
-          const copy = out.clone();
-          caches.open(CACHE).then(c => c.put(key, copy));
+    caches.match(req).then(cached => {
+      const network = fetch(req).then(res => {
+        if (res && res.status !== 206 && (res.ok || res.type === 'opaque')) {
+          const copy = res.clone();
+          caches.open(CACHE).then(c => c.put(req, copy)).catch(() => {});
         }
-        return out;
-      }).catch(() => cached || (isNav ? caches.match('./') : undefined));
+        return res;
+      }).catch(() => cached || Response.error());
       return cached || network;
     })
   );

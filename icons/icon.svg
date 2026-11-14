@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><linearGradient id="lgBg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#1e293b"/><stop offset="1" stop-color="#020617"/></linearGradient><linearGradient id="lgGold" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#fcd34d"/><stop offset="1" stop-color="#f59e0b"/></linearGradient></defs>
+<rect width="100" height="100" rx="24" fill="url(#lgGold)"/><rect x="4.5" y="4.5" width="91" height="91" rx="19.5" fill="url(#lgBg)"/>
+<ellipse cx="50" cy="77" rx="31" ry="3.2" fill="#000" fill-opacity=".22"/>
+<path d="M50 30C42 25.5 30 24.5 19 28V70C30 66.5 42 67.5 50 72Z" fill="#fff"/>
+<path d="M50 30C58 25.5 70 24.5 81 28V70C70 66.5 58 67.5 50 72Z" fill="#e8eef7"/>
+<path d="M50 30V72" stroke="#b6c3d9" stroke-width="1.4"/>
+<path d="M26.5 59 35 35.5 43.5 59" fill="none" stroke="#1e3a8a" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M29.8 51.5H40.2" stroke="#1e3a8a" stroke-width="4" stroke-linecap="round"/>
+<path d="M57.5 37.5H72M57.5 44.5H72M57.5 51.5H66" stroke="#b6c3d9" stroke-width="3" stroke-linecap="round"/>
+<circle cx="70" cy="63" r="9.5" fill="url(#lgGold)"/>
+<circle cx="70" cy="63" r="9.5" fill="none" stroke="#fff" stroke-opacity=".55" stroke-width="1.2"/>
+<path d="M65.2 63 68.7 66.5 75 59.4" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg>

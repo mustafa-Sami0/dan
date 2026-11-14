@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>سجل المدرس الإلكتروني - إصدار 2.5.6</title>
+    <title>سجل المدرس الإلكتروني - إصدار 2.7.3</title>
     <!-- ===== إعدادات التطبيق (PWA) ===== -->
     <meta name="theme-color" content="#1e3a8a">
     <meta name="mobile-web-app-capable" content="yes">
@@ -759,6 +759,14 @@
                     <input type="file" id="restoreFileInput" accept=".json" onchange="restoreBackupJSON(event)" class="hidden">
                 </label>
 
+                <button onclick="openSnapshots()" class="w-full bg-amber-50 hover:bg-amber-100 border border-amber-200 text-amber-900 p-4 rounded-2xl flex items-center justify-between transition">
+                    <div class="text-right"><h4 class="font-extrabold text-sm">نسخ الأمان على هذا الجهاز</h4><p class="text-xs text-slate-600">استرجاع حالة سابقة (يومية وقبل كل استبدال)</p></div>
+                    <i class="fa-solid fa-clock-rotate-left text-amber-500"></i>
+                </button>
+                <button onclick="setupPin()" class="w-full bg-slate-50 hover:bg-slate-100 border border-slate-200 text-slate-800 p-4 rounded-2xl flex items-center justify-between transition">
+                    <div class="text-right"><h4 class="font-extrabold text-sm">قفل التطبيق برمز PIN</h4><p class="text-xs text-slate-600">تفعيل أو إزالة القفل</p></div>
+                    <i class="fa-solid fa-lock text-slate-500"></i>
+                </button>
                 <div class="pt-2 border-t border-slate-200">
                     <button onclick="confirmResetDemoData()" class="w-full bg-rose-50 hover:bg-rose-100 border border-rose-200 text-rose-700 font-bold text-xs sm:text-sm py-3 rounded-xl transition">
                         إعادة ضبط وتوليد البيانات التجريبية (22 طالب)
@@ -1010,7 +1018,7 @@
                 </button>
                 <div class="mt-3 pt-3 border-t border-slate-200 text-center space-y-0.5">
                     <p class="text-[12px] font-extrabold text-slate-700">سجل المدرس الإلكتروني</p>
-                    <p class="text-[11px] font-bold text-slate-500">الإصدار 2.5.6</p>
+                    <p class="text-[11px] font-bold text-slate-500">الإصدار 2.7.3</p>
                     <p class="text-[11px] font-semibold text-slate-500">جميع الحقوق محفوظة © 2026</p>
                     <p class="text-[11px] font-semibold text-slate-500">المطوّر: <span class="font-extrabold text-blue-800">مصطفى سامي</span></p>
                 </div>
@@ -1062,6 +1070,7 @@
     <!-- ===================================================================== -->
     <script>
         const STORAGE_KEY = 'electronic_teacher_grader_v2';
+        const SCHEMA_VERSION = 3;
 
         // هيكل الأعمدة الافتراضي
         function getDefaultColumns() {
@@ -1241,6 +1250,141 @@
             mirrorTimer = setTimeout(() => idbSet(STORAGE_KEY, JSON.stringify(appState)), 800);
         }
 
+        // ===== نسخ أمان تلقائية قبل أي استبدال للبيانات (آخر 10) =====
+        async function safetySnapshot(reason, dataStr) {
+            const data = dataStr || JSON.stringify(appState);   // تُؤخذ فوراً قبل أي تغيير
+            try {
+                const list = (await idbGet('snapshots')) || [];
+                list.unshift({ t: new Date().toISOString(), reason, data });
+                const keep = []; let au = 0, ot = 0;
+                for (const x of list) {
+                    if (x.reason === 'auto-daily') { if (au++ < 7) keep.push(x); }
+                    else if (ot++ < 10) keep.push(x);
+                }
+                await idbSet('snapshots', keep);
+            } catch (e) {}
+        }
+        window.safetySnapshot = safetySnapshot;
+
+        function hasStudents() {
+            try { return Object.values(appState.years).some(y => Object.values(y.classes).some(c => Object.values(c.sections).some(sec => sec.students.length))); } catch (e) { return false; }
+        }
+        async function autoDailySnapshot() {
+            const d = new Date().toISOString().slice(0, 10);
+            if (localStorage.getItem('teacher_register_last_auto') === d || !hasStudents()) return;
+            localStorage.setItem('teacher_register_last_auto', d);
+            await safetySnapshot('auto-daily');
+        }
+
+        // ===== تشفير النسخ الاحتياطية (AES-GCM + PBKDF2) =====
+        function toB64(buf) { const a = new Uint8Array(buf); let t = ''; for (let i = 0; i < a.length; i += 8192) t += String.fromCharCode.apply(null, a.subarray(i, i + 8192)); return btoa(t); }
+        function fromB64(b) { const t = atob(b); const a = new Uint8Array(t.length); for (let i = 0; i < t.length; i++) a[i] = t.charCodeAt(i); return a; }
+        async function deriveKey(pass, salt) {
+            const km = await crypto.subtle.importKey('raw', new TextEncoder().encode(pass), 'PBKDF2', false, ['deriveKey']);
+            return crypto.subtle.deriveKey({ name: 'PBKDF2', salt, iterations: 250000, hash: 'SHA-256' }, km, { name: 'AES-GCM', length: 256 }, false, ['encrypt', 'decrypt']);
+        }
+        async function encryptBackup(text, pass) {
+            const salt = crypto.getRandomValues(new Uint8Array(16)), iv = crypto.getRandomValues(new Uint8Array(12));
+            const key = await deriveKey(pass, salt);
+            const ct = await crypto.subtle.encrypt({ name: 'AES-GCM', iv }, key, new TextEncoder().encode(text));
+            return JSON.stringify({ enc: 1, alg: 'AES-GCM/PBKDF2-250k', salt: toB64(salt), iv: toB64(iv), data: toB64(ct) });
+        }
+        async function decryptBackup(obj, pass) {
+            const key = await deriveKey(pass, fromB64(obj.salt));
+            const pt = await crypto.subtle.decrypt({ name: 'AES-GCM', iv: fromB64(obj.iv) }, key, fromB64(obj.data));
+            return new TextDecoder().decode(pt);
+        }
+
+        // ===== استرجاع من نسخ الأمان =====
+        const SNAP_LABELS = { 'auto-daily': 'نسخة يومية تلقائية', 'before-restore': 'قبل استعادة نسخة', 'before-undo': 'قبل التراجع عن حذف', 'before-demo-reset': 'قبل إعادة الضبط التجريبي', 'local-before-pull': 'قبل جلب نسخة السحابة', 'local-before-live-update': 'قبل تحديث لحظي', 'cloud-copy-before-overwrite': 'نسخة السحابة قبل استبدالها', 'remote-ignored-local-dirty': 'تعديل وارد من جهاز آخر', 'before-snapshot-restore': 'قبل استرجاع نسخة أمان' };
+        async function openSnapshots() {
+            const list = (await idbGet('snapshots')) || [];
+            const old = document.getElementById('snapSheet'); if (old) old.remove();
+            const ov = document.createElement('div'); ov.id = 'snapSheet'; ov.className = 'cs-ov'; ov.style.zIndex = 90;
+            const card = document.createElement('div'); card.className = 'cs-card'; card.style.maxWidth = '420px';
+            const hd = document.createElement('div'); hd.className = 'cs-hd';
+            const ttl = document.createElement('b'); ttl.textContent = 'نسخ الأمان على هذا الجهاز';
+            const x = document.createElement('button'); x.type = 'button'; x.className = 'cs-x'; x.textContent = '✕';
+            hd.append(ttl, x);
+            const box = document.createElement('div'); box.className = 'cs-list';
+            if (!list.length) { const e = document.createElement('div'); e.className = 'cs-empty'; e.textContent = 'لا توجد نسخ أمان بعد'; box.append(e); }
+            list.forEach(it => {
+                let info = '';
+                try { const q = JSON.parse(it.data); let n = 0; Object.values(q.years).forEach(y => Object.values(y.classes).forEach(c => Object.values(c.sections).forEach(sec => n += sec.students.length))); info = n + ' طالب'; } catch (e) { info = 'غير مقروءة'; }
+                const b = document.createElement('button'); b.type = 'button'; b.className = 'cs-opt';
+                const l = document.createElement('span');
+                l.textContent = (SNAP_LABELS[it.reason] || it.reason) + ' — ' + new Date(it.t).toLocaleString('ar-IQ') + ' — ' + info + ' — ' + Math.round(it.data.length / 1024) + 'KB';
+                b.append(l);
+                b.addEventListener('click', () => {
+                    ov.remove();
+                    showConfirm('استرجاع نسخة أمان', 'ستحل هذه النسخة محل بياناتك الحالية (وتُحدَّث السحابة بها). تُحفظ نسخة من بياناتك الحالية قبل ذلك. هل تتابع؟', () => {
+                        let p; try { p = JSON.parse(it.data); } catch (e) { showToast('النسخة تالفة', 'error'); return; }
+                        const bad = validateBackup(p); if (bad) { showToast('النسخة غير صالحة: ' + bad, 'error'); return; }
+                        safetySnapshot('before-snapshot-restore');
+                        p.lastBackup = appState.lastBackup || p.lastBackup;
+                        window.appState = appState = p; saveAllData(false); populateSelectors(); closeModal('backupModal');
+                        showToast('تم الاسترجاع من نسخة الأمان');
+                    });
+                });
+                box.append(b);
+            });
+            card.append(hd, box); ov.append(card);
+            ov.addEventListener('click', e => { if (e.target === ov || e.target === x) ov.remove(); });
+            document.body.appendChild(ov);
+        }
+
+        // ===== مسح بيانات الجهاز + قفل PIN =====
+        async function wipeLocalData() {
+            ['electronic_teacher_grader_v2', 'electronic_teacher_grader_v2_corrupt', 'teacher_register_cloud_ts', 'teacher_register_dirty', 'teacher_register_owner', 'teacher_register_pin', 'teacher_register_pin_fail', 'teacher_register_last_auto'].forEach(k => localStorage.removeItem(k));
+            await new Promise(r => { const q = indexedDB.deleteDatabase(IDB_NAME); q.onsuccess = q.onerror = q.onblocked = () => r(); });
+            location.reload();
+        }
+        window.wipeLocalData = wipeLocalData;
+        const PIN_KEY = 'teacher_register_pin';
+        async function pinHash(pin, salt) {
+            const km = await crypto.subtle.importKey('raw', new TextEncoder().encode(pin), 'PBKDF2', false, ['deriveBits']);
+            return toB64(await crypto.subtle.deriveBits({ name: 'PBKDF2', salt: fromB64(salt), iterations: 150000, hash: 'SHA-256' }, km, 256));
+        }
+        async function pinCheck(pin) { try { const r = JSON.parse(localStorage.getItem(PIN_KEY)); return (await pinHash(pin, r.salt)) === r.hash; } catch (e) { return false; } }
+        async function setupPin() {
+            if (localStorage.getItem(PIN_KEY)) {
+                if (!confirm('قفل التطبيق مفعّل. هل تريد إزالته؟')) return;
+                const cur = prompt('أدخل الرمز الحالي'); if (cur === null) return;
+                if (await pinCheck(cur)) { localStorage.removeItem(PIN_KEY); showToast('أُزيل قفل التطبيق'); } else showToast('الرمز غير صحيح', 'error');
+                return;
+            }
+            const p1 = prompt('اختر رمز PIN من 4 إلى 8 أرقام'); if (p1 === null) return;
+            if (!/^\d{4,8}$/.test(p1)) { showToast('الرمز يجب أن يكون من 4 إلى 8 أرقام', 'error'); return; }
+            if (prompt('أعد كتابة الرمز') !== p1) { showToast('الرمزان غير متطابقين', 'error'); return; }
+            const salt = toB64(crypto.getRandomValues(new Uint8Array(16)));
+            localStorage.setItem(PIN_KEY, JSON.stringify({ salt, hash: await pinHash(p1, salt) }));
+            showToast('تم تفعيل قفل التطبيق (يُطلب عند الفتح وبعد غياب دقيقتين)');
+        }
+        function showLock() {
+            if (document.getElementById('pinLock') || !localStorage.getItem(PIN_KEY)) return;
+            const ov = document.createElement('div'); ov.id = 'pinLock';
+            ov.style.cssText = 'position:fixed;inset:0;z-index:99999;background:#0f172a;display:flex;align-items:center;justify-content:center;font-family:Cairo,sans-serif;direction:rtl;padding:20px';
+            ov.innerHTML = '<div style="background:#fff;border-radius:24px;padding:24px;width:100%;max-width:320px;text-align:center"><div style="font-weight:800;font-size:18px;margin-bottom:12px">سجل المدرس مقفل</div><input id="pinInput" type="password" inputmode="numeric" autocomplete="off" maxlength="8" placeholder="أدخل الرمز" style="width:100%;text-align:center;font-size:22px;letter-spacing:6px;border:1px solid #cbd5e1;border-radius:14px;padding:10px"><div id="pinMsg" style="color:#e11d48;font-size:12px;font-weight:700;min-height:18px;margin:8px 0"></div><button id="pinGo" style="width:100%;background:#1e3a8a;color:#fff;font-weight:800;border-radius:14px;padding:10px">فتح</button><button id="pinForgot" style="margin-top:12px;font-size:12px;color:#64748b;text-decoration:underline">نسيت الرمز؟</button></div>';
+            document.body.appendChild(ov);
+            const inp = ov.querySelector('#pinInput'), msg = ov.querySelector('#pinMsg');
+            const go = async () => {
+                const f = JSON.parse(localStorage.getItem('teacher_register_pin_fail') || '{"n":0,"until":0}');
+                if (Date.now() < f.until) { msg.textContent = 'محاولات كثيرة، انتظر ' + Math.ceil((f.until - Date.now()) / 1000) + ' ثانية'; return; }
+                if (await pinCheck(inp.value)) { localStorage.removeItem('teacher_register_pin_fail'); ov.remove(); return; }
+                f.n++; if (f.n >= 5) f.until = Date.now() + Math.min(600, 30 * Math.pow(2, f.n - 5)) * 1000;
+                localStorage.setItem('teacher_register_pin_fail', JSON.stringify(f)); inp.value = ''; msg.textContent = 'الرمز غير صحيح';
+            };
+            ov.querySelector('#pinGo').onclick = go;
+            inp.addEventListener('keydown', e => { if (e.key === 'Enter') go(); });
+            ov.querySelector('#pinForgot').onclick = () => { if (confirm('سيُمسح سجل هذا الجهاز ورمز القفل (بياناتك تبقى في السحابة إن كانت مفعّلة ومتزامنة). متابعة؟')) wipeLocalData(); };
+            setTimeout(() => inp.focus(), 100);
+        }
+        let hiddenAt = 0;
+        document.addEventListener('visibilitychange', () => {
+            if (document.hidden) hiddenAt = Date.now();
+            else if (hiddenAt && Date.now() - hiddenAt > 120000) showLock();
+        });
+
         // ===== تذكير النسخ الاحتياطي (كل 14 يوماً) =====
         const BACKUP_REMINDER_DAYS = 7;
         function daysSince(iso) {
@@ -1319,7 +1463,10 @@
 
         function saveAllData(showToastMsg = false) {
             try {
+                appState.schemaVersion = SCHEMA_VERSION;
                 localStorage.setItem(STORAGE_KEY, JSON.stringify(appState));
+                localStorage.setItem('teacher_register_dirty', '1');
+                window.__saveSeq = (window.__saveSeq || 0) + 1;
                 scheduleMirror();
                 if (typeof scheduleCloudSync === "function") scheduleCloudSync();
                 const now = new Date();
@@ -1390,6 +1537,8 @@
                             if (!isNaN(num)) {
                                 sum += num;
                                 validCount++;
+                            } else if (appState.absentPolicy === 'zero') {
+                                validCount++;   // (غ) و(م) تُحسب صفراً حسب إعداد المدرس
                             }
                         }
                     });
@@ -1448,14 +1597,14 @@
             if (!yearsList.includes(appState.selectedYear) && yearsList.length > 0) {
                 appState.selectedYear = yearsList[0];
             }
-            yearSelect.innerHTML = yearsList.map(y => `<option value="${y}" ${y === appState.selectedYear ? 'selected' : ''}>${y}</option>`).join('');
+            yearSelect.innerHTML = yearsList.map(y => `<option value="${cdEsc(y)}" ${y === appState.selectedYear ? 'selected' : ''}>${cdEsc(y)}</option>`).join('');
 
             const yearObj = appState.years[appState.selectedYear];
             const classesList = yearObj ? Object.keys(yearObj.classes) : [];
             if (!classesList.includes(appState.selectedClass) && classesList.length > 0) {
                 appState.selectedClass = classesList[0];
             }
-            classSelect.innerHTML = classesList.map(c => `<option value="${c}" ${c === appState.selectedClass ? 'selected' : ''}>${c}</option>`).join('');
+            classSelect.innerHTML = classesList.map(c => `<option value="${cdEsc(c)}" ${c === appState.selectedClass ? 'selected' : ''}>${cdEsc(c)}</option>`).join('');
 
             const classObj = yearObj ? yearObj.classes[appState.selectedClass] : null;
             const sectionsList = classObj ? Object.keys(classObj.sections) : [];
@@ -1464,7 +1613,7 @@
             }
             sectionSelect.innerHTML = sectionsList.map(s => {
                 const count = classObj.sections[s].students.length;
-                return `<option value="${s}" ${s === appState.selectedSection ? 'selected' : ''}>${s} - ${count} طالب</option>`;
+                return `<option value="${cdEsc(s)}" ${s === appState.selectedSection ? 'selected' : ''}>${cdEsc(s)} - ${count} طالب</option>`;
             }).join('');
 
             updateHeaderUI();
@@ -1546,9 +1695,36 @@
             lastDeleteSnapshot=JSON.parse(JSON.stringify(appState));
             showToast('يمكنك التراجع عن آخر حذف من الزر العلوي');
         }
+        function mergeMissing(cur, old) {
+            Object.entries(old.years || {}).forEach(([yn, y]) => {
+                if (!cur.years[yn]) { cur.years[yn] = y; return; }
+                Object.entries(y.classes || {}).forEach(([cn, c]) => {
+                    const cc = cur.years[yn].classes;
+                    if (!cc[cn]) { cc[cn] = c; return; }
+                    Object.entries(c.sections || {}).forEach(([sn, sec]) => {
+                        const cs = cc[cn].sections;
+                        if (!cs[sn]) { cs[sn] = sec; return; }
+                        const have = new Set(cs[sn].students.map(x => x.id));
+                        sec.students.forEach(st => {
+                            if (have.has(st.id)) return;
+                            cs[sn].students.push(st);
+                            if (sec.conduct && sec.conduct[st.id]) { cs[sn].conduct = cs[sn].conduct || {}; cs[sn].conduct[st.id] = sec.conduct[st.id]; }
+                        });
+                        cs[sn].notes = cs[sn].notes || [];
+                        const hn = new Set(cs[sn].notes.map(x => x.id));
+                        (sec.notes || []).forEach(n => { if (!hn.has(n.id)) cs[sn].notes.push(n); });
+                    });
+                });
+            });
+        }
+        function setAbsentPolicy(v) {
+            appState.absentPolicy = v === 'zero' ? 'zero' : 'skip';
+            renderGradesTable(); window.appState = appState; saveAllData(false);
+            showToast(v === 'zero' ? 'ستُحسب (غ) و(م) صفراً' : 'ستُتجاهل (غ) و(م) في الحساب');
+        }
         function undoLastDelete(){
             if(!lastDeleteSnapshot){showToast('لا يوجد حذف حديث للتراجع عنه','error');return;}
-            appState=lastDeleteSnapshot;lastDeleteSnapshot=null;
+            safetySnapshot('before-undo');mergeMissing(appState,lastDeleteSnapshot);lastDeleteSnapshot=null;
             populateSelectors();renderSetupModalContent();renderGradesTable();window.appState = appState; saveAllData(false);
             showToast('تم التراجع عن آخر حذف');
         }
@@ -1601,7 +1777,7 @@
             groups.forEach((g, idx) => {
                 const bgColors = ['bg-blue-100 text-blue-950', 'bg-indigo-100 text-indigo-950', 'bg-emerald-100 text-emerald-950', 'bg-amber-100 text-amber-950', 'bg-purple-100 text-purple-950'];
                 const colorClass = bgColors[idx % bgColors.length];
-                groupRowHtml += `<th colspan="${g.count}" class="${colorClass} px-2 py-1 text-center border-l border-b border-slate-300 text-[11px] font-extrabold">${g.name}</th>`;
+                groupRowHtml += `<th colspan="${g.count}" class="${colorClass} px-2 py-1 text-center border-l border-b border-slate-300 text-[11px] font-extrabold">${cdEsc(g.name)}</th>`;
             });
             groupRowHtml += `</tr>`;
 
@@ -1609,7 +1785,7 @@
             appState.columns.forEach(col => {
                 const theme = getColumnThemeClasses(col);
                 colsRowHtml += `<th class="${theme.th} grade-col-cell px-1 py-1.5 text-center border-b border-slate-300">
-                    <div class="font-extrabold text-[10px] leading-tight truncate" title="${col.label}">${col.label}</div>
+                    <div class="font-extrabold text-[10px] leading-tight truncate" title="${cdEsc(col.label)}">${cdEsc(col.label)}</div>
                     <div class="text-[10px] opacity-85 font-extrabold">(${col.max})</div>
                 </th>`;
             });
@@ -1635,7 +1811,7 @@
             }
 
             if (filteredStudents.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="${appState.columns.length + 2}" class="py-8 text-center text-slate-500 font-bold">لا توجد نتائج مطابقة للبحث "${searchQuery}"</td></tr>`;
+                tbody.innerHTML = `<tr><td colspan="${appState.columns.length + 2}" class="py-8 text-center text-slate-500 font-bold">لا توجد نتائج مطابقة للبحث "${cdEsc(searchQuery)}"</td></tr>`;
                 return;
             }
 
@@ -1646,7 +1822,7 @@
 
                 bodyHtml += `<tr class="group transition-colors">
                     <td class="sticky-col-1 px-1 py-2 text-center font-extrabold text-slate-600 text-xs">${realIndex + 1}</td>
-                    <td class="sticky-col-2 px-2 py-2 font-bold text-slate-800">${student.name}</td>`;
+                    <td class="sticky-col-2 px-2 py-2 font-bold text-slate-800">${cdEsc(student.name)}</td>`;
 
                 appState.columns.forEach((col, colIdx) => {
                     const val = computed[col.id];
@@ -1665,9 +1841,9 @@
                     if (col.type === 'input') {
                         bodyHtml += `<td class="${theme.td} grade-col-cell px-1 py-1 text-center">
                             <input type="text" 
-                                value="${val}" 
-                                data-student-id="${student.id}" 
-                                data-col-id="${col.id}"
+                                value="${cdEsc(val)}" 
+                                data-student-id="${cdEsc(student.id)}" 
+                                data-col-id="${cdEsc(col.id)}"
                                 data-row="${index}"
                                 data-col="${colIdx}"
                                 onchange="handleGradeInput(this)"
@@ -1679,8 +1855,8 @@
                                 placeholder="-">
                         </td>`;
                     } else {
-                        bodyHtml += `<td id="cell_${student.id}_${col.id}" class="${theme.td} ${statusClass} grade-col-cell px-1 py-2 text-center text-xs sm:text-sm">
-                            ${val !== '' ? val : '-'}
+                        bodyHtml += `<td id="cell_${cdEsc(student.id)}_${cdEsc(col.id)}" class="${theme.td} ${statusClass} grade-col-cell px-1 py-2 text-center text-xs sm:text-sm">
+                            ${val !== '' ? cdEsc(val) : '-'}
                         </td>`;
                     }
                 });
@@ -1709,8 +1885,8 @@
             } else if (rawVal === 'غ' || rawVal === 'م') {
                 student.grades[colId] = rawVal;
             } else {
-                rawVal = rawVal.replace(/[٠-٩]/g, d => '٠١٢٣٤٥٦٧٨٩'.indexOf(d));
-                const num = parseFloat(rawVal);
+                rawVal = rawVal.replace(/[٠-٩]/g, d => '٠١٢٣٤٥٦٧٨٩'.indexOf(d)).replace(/[۰-۹]/g, d => '۰۱۲۳۴۵۶۷۸۹'.indexOf(d)).replace(/[٫,،]/g, '.');
+                const num = /^\d+(\.\d+)?$/.test(rawVal) ? parseFloat(rawVal) : NaN;
                 if (isNaN(num) || num < 0) {
                     showToast('يرجى إدخال رقم صحيح أو (غ) أو (م)', 'error');
                     inputEl.value = student.grades[colId] || '';
@@ -1825,8 +2001,8 @@
             document.getElementById('yearsChipsContainer').innerHTML = yearsKeys.map(y => {
                 const isSelected = y === appState.selectedYear;
                 return `<div class="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold border ${isSelected ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-slate-700 border-slate-300'}">
-                    <span class="cursor-pointer" onclick="selectYearFromModal('${y}')">${y}</span>
-                    ${yearsKeys.length > 1 ? `<button onclick="deleteYear('${y}')" class="mr-1 hover:text-rose-300"><i class="fa-solid fa-trash-can text-[10px]"></i></button>` : ''}
+                    <span class="cursor-pointer" data-act="selYear" data-v="${cdEsc(y)}">${cdEsc(y)}</span>
+                    ${yearsKeys.length > 1 ? `<button data-act="delYear" data-v="${cdEsc(y)}" class="mr-1 hover:text-rose-300"><i class="fa-solid fa-trash-can text-[10px]"></i></button>` : ''}
                 </div>`;
             }).join('');
 
@@ -1835,8 +2011,8 @@
             document.getElementById('classesChipsContainer').innerHTML = classesKeys.map(c => {
                 const isSelected = c === appState.selectedClass;
                 return `<div class="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold border ${isSelected ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-slate-700 border-slate-300'}">
-                    <span class="cursor-pointer" onclick="selectClassFromModal('${c}')">${c}</span>
-                    ${classesKeys.length > 1 ? `<button onclick="deleteClass('${c}')" class="mr-1 hover:text-rose-300"><i class="fa-solid fa-trash-can text-[10px]"></i></button>` : ''}
+                    <span class="cursor-pointer" data-act="selClass" data-v="${cdEsc(c)}">${cdEsc(c)}</span>
+                    ${classesKeys.length > 1 ? `<button data-act="delClass" data-v="${cdEsc(c)}" class="mr-1 hover:text-rose-300"><i class="fa-solid fa-trash-can text-[10px]"></i></button>` : ''}
                 </div>`;
             }).join('');
 
@@ -1846,8 +2022,8 @@
                 const isSelected = s === appState.selectedSection;
                 const count = classObj.sections[s].students.length;
                 return `<div class="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold border ${isSelected ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-slate-700 border-slate-300'}">
-                    <span class="cursor-pointer" onclick="selectSectionFromModal('${s}')">${s} (${count})</span>
-                    ${sectionsKeys.length > 1 ? `<button onclick="deleteSection('${s}')" class="mr-1 hover:text-rose-300"><i class="fa-solid fa-trash-can text-[10px]"></i></button>` : ''}
+                    <span class="cursor-pointer" data-act="selSection" data-v="${cdEsc(s)}">${cdEsc(s)} (${count})</span>
+                    ${sectionsKeys.length > 1 ? `<button data-act="delSection" data-v="${cdEsc(s)}" class="mr-1 hover:text-rose-300"><i class="fa-solid fa-trash-can text-[10px]"></i></button>` : ''}
                 </div>`;
             }).join('');
 
@@ -1863,9 +2039,9 @@
                     <div class="flex items-center justify-between px-3 py-2 text-xs hover:bg-slate-50">
                         <div class="flex items-center gap-2">
                             <span class="w-5 h-5 rounded-full bg-slate-100 text-slate-600 font-bold text-[11px] flex items-center justify-center">${idx + 1}</span>
-                            <span class="font-bold text-slate-800">${st.name}</span>
+                            <span class="font-bold text-slate-800">${cdEsc(st.name)}</span>
                         </div>
-                        <button onclick="deleteSingleStudent('${st.id}')" class="text-rose-500 hover:text-rose-700 p-1"><i class="fa-solid fa-trash-can"></i></button>
+                        <button data-act="delStudent" data-v="${cdEsc(st.id)}" class="text-rose-500 hover:text-rose-700 p-1"><i class="fa-solid fa-trash-can"></i></button>
                     </div>
                 `).join('');
         }
@@ -1886,6 +2062,7 @@
 
         function deleteYear(y) {
             showConfirm('حذف سنة دراسية', `هل أنت متأكد من حذف (${y})؟`, () => {
+                captureDeleteSnapshot();
                 delete appState.years[y];
                 appState.selectedYear = Object.keys(appState.years)[0];
                 populateSelectors(); renderSetupModalContent(); window.appState = appState; saveAllData(true);
@@ -1906,6 +2083,7 @@
         function deleteClass(c) {
             showConfirm('حذف صف دراسي', `هل أنت متأكد من حذف (${c})؟`, () => {
                 const yearObj = appState.years[appState.selectedYear];
+                captureDeleteSnapshot();
                 delete yearObj.classes[c];
                 appState.selectedClass = Object.keys(yearObj.classes)[0];
                 populateSelectors(); renderSetupModalContent(); window.appState = appState; saveAllData(true);
@@ -1940,7 +2118,11 @@
             if (!sectionObj) return;
 
             const names = rawText.split(/[\n،,]+/).map(n => n.trim()).filter(n => n.length > 0);
+            const have = new Set(sectionObj.students.map(x => x.name.trim()));
+            let dup = 0;
             names.forEach(name => {
+                if (have.has(name)) { dup++; return; }
+                have.add(name);
                 sectionObj.students.push({
                     id: 'st_' + Date.now() + '_' + Math.random().toString(36).substr(2, 5),
                     name: name,
@@ -1950,16 +2132,16 @@
 
             document.getElementById('bulkStudentsTextarea').value = '';
             populateSelectors(); renderSetupModalContent(); window.appState = appState; saveAllData(false);
-            showToast(`تمت إضافة ${names.length} طالب بنجاح`);
+            showToast(dup ? `تمت إضافة ${names.length - dup} طالب (تخطي ${dup} اسماً مكرراً)` : `تمت إضافة ${names.length} طالب بنجاح`);
         }
 
 
         // =====================================================================
         // استيراد أسماء الطلاب من Excel أو PDF (تُحمَّل المكتبة عند أول استخدام فقط)
         // =====================================================================
-        const XLSX_SRC = 'https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js';
-        const PDFJS_SRC = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js';
-        const PDFJS_WORKER = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+        const XLSX_SRC = './lib/xlsx.full.min.js';
+        const PDFJS_SRC = './lib/pdf.min.js';
+        const PDFJS_WORKER = './lib/pdf.worker.min.js';
         const loadedScripts = {};
         function loadScriptOnce(src) {
             return new Promise((resolve, reject) => {
@@ -1979,6 +2161,7 @@
                 .replace(/\s+/g, ' ').trim();
             t = t.replace(/^[\d\u0660-\u0669]+\s*[-.)\u066b:،]*\s*/, '').trim();   // ترقيم في بداية السطر
             t = t.replace(/(\s+[\d\u0660-\u0669.]+)+$/, '').trim();               // أرقام في نهاية السطر
+            t = t.replace(/[<>"`]/g, '');
             if (t.length < 2 || t.length > 60) return '';
             if (!/[A-Za-z\u0600-\u06FF]/.test(t)) return '';
             if (HEADER_WORDS.includes(t.toLowerCase())) return '';
@@ -2038,7 +2221,7 @@
                 showToast('جارٍ قراءة ملف PDF...');
                 await loadScriptOnce(PDFJS_SRC);
                 pdfjsLib.GlobalWorkerOptions.workerSrc = PDFJS_WORKER;
-                const pdf = await pdfjsLib.getDocument({ data: new Uint8Array(await file.arrayBuffer()) }).promise;
+                const pdf = await pdfjsLib.getDocument({ data: new Uint8Array(await file.arrayBuffer()), isEvalSupported: false }).promise;
                 const lines = [];
                 let hasText = false;
                 for (let p = 1; p <= pdf.numPages; p++) {
@@ -2074,6 +2257,7 @@
             if (!sectionObj) return;
             captureDeleteSnapshot();
             sectionObj.students = sectionObj.students.filter(s => s.id !== studentId);
+            if (sectionObj.conduct) delete sectionObj.conduct[studentId];
             populateSelectors(); renderSetupModalContent(); window.appState = appState; saveAllData(false);
             showToast('تم حذف الطالب');
         }
@@ -2112,7 +2296,7 @@
 
         function drawStructureList() {
             const container = document.getElementById('structureModalBody');
-            let html = '';
+            let html = `<div class="bg-amber-50 border border-amber-200 rounded-2xl p-3 space-y-1.5"><label class="block text-xs font-extrabold text-amber-900">معاملة (غ) و(م) عند حساب المجاميع والمعدلات</label><select onchange="setAbsentPolicy(this.value)" class="w-full bg-white border border-amber-300 rounded-lg px-2.5 py-1.5 text-xs font-bold"><option value="skip" ${appState.absentPolicy !== 'zero' ? 'selected' : ''}>تجاهلها (لا تدخل في المعدل)</option><option value="zero" ${appState.absentPolicy === 'zero' ? 'selected' : ''}>تُحسب صفراً</option></select></div>`;
 
             tempColumns.forEach((col, idx) => {
                 const isCalc = col.type !== 'input';
@@ -2128,16 +2312,16 @@
                         <span class="text-[11px] font-extrabold text-slate-400 w-5">${idx + 1}.</span>
                         <div class="flex-1">
                             <div class="flex items-center gap-1.5 mb-1">
-                                <span class="text-[11px] font-bold text-emerald-700">${col.group}</span>
+                                <span class="text-[11px] font-bold text-emerald-700">${cdEsc(col.group)}</span>
                                 ${badge}
                             </div>
-                            <input type="text" value="${col.label}" onchange="tempColumns[${idx}].label = this.value" class="w-full bg-slate-50 border border-slate-300 rounded-lg px-2.5 py-1 text-xs font-bold">
+                            <input type="text" value="${cdEsc(col.label)}" onchange="tempColumns[${idx}].label = this.value" class="w-full bg-slate-50 border border-slate-300 rounded-lg px-2.5 py-1 text-xs font-bold">
                         </div>
                     </div>
                     <div class="flex items-center gap-2">
                         <div>
                             <label class="block text-[10px] text-slate-500 font-bold text-center">الدرجة</label>
-                            <input type="number" value="${col.max}" onchange="tempColumns[${idx}].max = parseFloat(this.value) || 100" class="w-16 text-center bg-slate-50 border border-slate-300 rounded-lg py-1 text-xs font-extrabold">
+                            <input type="number" value="${col.max}" onchange="tempColumns[${idx}].max = (parseFloat(this.value) > 0 ? parseFloat(this.value) : tempColumns[${idx}].max)" class="w-16 text-center bg-slate-50 border border-slate-300 rounded-lg py-1 text-xs font-extrabold">
                         </div>
                         ${col.type === 'input' ? `<button onclick="removeTempColumn(${idx})" class="mt-3 text-rose-500 hover:bg-rose-50 p-2 rounded-lg"><i class="fa-solid fa-trash-can"></i></button>` : '<div class="w-8"></div>'}
                     </div>
@@ -2170,69 +2354,122 @@
         }
 
         function removeTempColumn(idx) { tempColumns.splice(idx, 1); drawStructureList(); }
-        function applyStructureChanges() { appState.columns = tempColumns; renderGradesTable(); window.appState = appState; saveAllData(true); closeModal('structureModal'); }
+        function applyStructureChanges() {
+            if (tempColumns.some(c => !String(c.label || '').trim())) { showToast('يوجد عمود بدون اسم', 'error'); return; }
+            tempColumns.forEach(c => { if (c.sources) c.sources = c.sources.filter(id => tempColumns.some(x => x.id === id)); });
+            const maxOf = {}; tempColumns.forEach(c => { if (c.type === 'input') maxOf[c.id] = c.max; });
+            let over = 0;
+            Object.values(appState.years).forEach(y => Object.values(y.classes).forEach(cl => Object.values(cl.sections).forEach(sec => sec.students.forEach(st => {
+                Object.entries(st.grades || {}).forEach(([k, v]) => { if (typeof v === 'number' && maxOf[k] !== undefined && v > maxOf[k]) over++; });
+            }))));
+            const go = () => { appState.columns = tempColumns; renderGradesTable(); window.appState = appState; saveAllData(true); closeModal('structureModal'); };
+            if (over > 0) showConfirm('درجات تتجاوز الحد', `يوجد ${over} درجة محفوظة أكبر من الدرجة العظمى الجديدة. ستبقى كما هي وقد تظهر مجاميع أكبر من حدها. هل تتابع؟`, go); else go();
+        }
         function resetDefaultStructure() { tempColumns = getDefaultColumns(); drawStructureList(); showToast('تمت استعادة التقسيم الافتراضي'); }
 
         // النسخ الاحتياطي JSON
-        function downloadBackupJSON() {
+        async function buildBackupText() {
+            appState.schemaVersion = SCHEMA_VERSION; appState.appVersion = '2.7.3';
+            const text = JSON.stringify(appState, null, 2);
+            const pass = prompt('اختياري: اكتب كلمة سر لتشفير النسخة (فيها بيانات طلاب).\nاتركها فارغة لنسخة غير مشفرة.\nتحذير: إن نسيت الكلمة لا يمكن استرجاع النسخة.');
+            if (pass === null) return null;
+            if (pass === '') return { text, enc: false };
+            if (prompt('أعد كتابة كلمة السر للتأكيد') !== pass) { showToast('كلمتا السر غير متطابقتين، أُلغيت النسخة', 'error'); return null; }
+            return { text: await encryptBackup(text, pass), enc: true };
+        }
+        function markBackupDone() {
             appState.lastBackup = new Date().toISOString();
-            window.appState = appState; saveAllData(false);
-            checkBackupReminder();
-            const dataStr = JSON.stringify(appState, null, 2);
-            const blob = new Blob([dataStr], { type: 'application/json' });
+            window.appState = appState; saveAllData(false); checkBackupReminder();
+            showToast('سُجّلت النسخة الاحتياطية');
+        }
+        function triggerDownload(b) {
+            const blob = new Blob([b.text], { type: 'application/json' });
             const url = URL.createObjectURL(blob);
             const a = document.createElement('a');
             a.href = url;
-            a.download = `سجل_المدرس_الالكتروني_${new Date().toISOString().slice(0, 10)}.json`;
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-            URL.revokeObjectURL(url);
-            showToast('تم تنزيل النسخة الاحتياطية بنجاح');
+            a.download = `سجل_المدرس_الالكتروني_${new Date().toISOString().slice(0, 10)}${b.enc ? '_مشفرة' : ''}.json`;
+            document.body.appendChild(a); a.click(); document.body.removeChild(a);
+            setTimeout(() => URL.revokeObjectURL(url), 4000);
+            showConfirm('تأكيد حفظ النسخة', 'هل ظهر الملف فعلاً في التنزيلات/الملفات على جهازك؟ اضغط «تأكيد» فقط إذا تأكدت من وجوده.', markBackupDone);
         }
-
+        async function downloadBackupJSON() {
+            const b = await buildBackupText(); if (!b) return;
+            triggerDownload(b);
+        }
         async function shareBackup() {
-            const fileName = `سجل_المدرس_${new Date().toISOString().slice(0, 10)}.json`;
+            const b = await buildBackupText(); if (!b) return;
             try {
-                const file = new File([JSON.stringify(appState, null, 2)], fileName, { type: 'application/json' });
+                const file = new File([b.text], `سجل_المدرس_${new Date().toISOString().slice(0, 10)}${b.enc ? '_مشفرة' : ''}.json`, { type: 'application/json' });
                 if (navigator.canShare && navigator.canShare({ files: [file] })) {
                     await navigator.share({ files: [file], title: 'نسخة احتياطية - سجل المدرس' });
-                    appState.lastBackup = new Date().toISOString();
-                    window.appState = appState; saveAllData(false);
-                    checkBackupReminder();
-                    showToast('تمت مشاركة النسخة الاحتياطية');
+                    markBackupDone();
                     return;
                 }
-            } catch (e) {
-                if (e && e.name === 'AbortError') return;
+            } catch (e) { if (e && e.name === 'AbortError') return; }
+            triggerDownload(b);
+        }
+
+        function validateBackup(p) {
+            if (!p || typeof p !== 'object' || Array.isArray(p)) return 'الملف ليس نسخة احتياطية';
+            if (p.schemaVersion && p.schemaVersion > SCHEMA_VERSION) return 'النسخة من إصدار أحدث من هذا التطبيق، حدّث التطبيق أولاً';
+            if (!p.meta || typeof p.meta !== 'object') return 'بيانات المدرس مفقودة';
+            ['schoolName', 'subjectName', 'teacherName'].forEach(k => { if (typeof p.meta[k] !== 'string') p.meta[k] = ''; });
+            if (!Array.isArray(p.columns) || !p.columns.length) return 'تقسيم الدرجات (الأعمدة) مفقود';
+            for (const c of p.columns) if (!c || typeof c.id !== 'string' || !['input', 'sum', 'avg'].includes(c.type) || typeof c.max !== 'number') return 'تقسيم الدرجات تالف';
+            if (!p.years || typeof p.years !== 'object' || !Object.keys(p.years).length) return 'لا توجد سنوات دراسية في الملف';
+            for (const y of Object.values(p.years)) {
+                if (!y || typeof y.classes !== 'object') return 'بنية السنوات تالفة';
+                for (const c of Object.values(y.classes)) {
+                    if (!c || typeof c.sections !== 'object') return 'بنية الصفوف تالفة';
+                    for (const sec of Object.values(c.sections)) {
+                        if (!sec || !Array.isArray(sec.students)) return 'بنية الشعب تالفة';
+                        if (!Array.isArray(sec.notes)) sec.notes = [];
+                        for (const st of sec.students) {
+                            if (!st || typeof st.id !== 'string' || typeof st.name !== 'string') return 'بيانات طالب تالفة';
+                            if (!st.grades || typeof st.grades !== 'object') st.grades = {};
+                        }
+                    }
+                }
             }
-            downloadBackupJSON();
+            return '';
         }
 
         function restoreBackupJSON(event) {
             const file = event.target.files[0];
             if (!file) return;
             const reader = new FileReader();
-            reader.onload = function(e) {
+            reader.onload = async function(e) {
+                let parsed;
                 try {
-                    const parsed = JSON.parse(e.target.result);
-                    if (parsed && parsed.years && parsed.meta) {
-                        window.appState = appState = parsed;
-                        window.appState = appState; saveAllData(false); populateSelectors(); closeModal('backupModal');
-                        showToast('تمت استعادة النسخة الاحتياطية بنجاح!');
-                    } else {
-                        showToast('ملف النسخة الاحتياطية غير صالح', 'error');
+                    parsed = JSON.parse(e.target.result);
+                    if (parsed && parsed.enc === 1) {
+                        const pw = prompt('هذه النسخة مشفرة. اكتب كلمة السر');
+                        if (pw === null) return;
+                        parsed = JSON.parse(await decryptBackup(parsed, pw));
                     }
-                } catch (err) {
-                    showToast('تعذر قراءة الملف', 'error');
-                }
+                } catch (err) { showToast('تعذر قراءة الملف أو كلمة السر خاطئة', 'error'); return; }
+                const bad = validateBackup(parsed);
+                if (bad) { showToast('ملف غير صالح: ' + bad, 'error'); return; }
+                let secs = 0, studs = 0;
+                Object.values(parsed.years).forEach(y => Object.values(y.classes).forEach(c => Object.values(c.sections).forEach(sec => { secs++; studs += sec.students.length; })));
+                showConfirm('استعادة نسخة احتياطية',
+                    `ستحل هذه النسخة (${Object.keys(parsed.years).length} سنة، ${secs} شعبة، ${studs} طالب) محل بياناتك الحالية، وسيُحدَّث حساب السحابة بها أيضاً. تُحفظ نسخة تلقائية من بياناتك الحالية قبل الاستبدال. هل تتابع؟`,
+                    () => {
+                        safetySnapshot('before-restore');
+                        parsed.lastBackup = appState.lastBackup || parsed.lastBackup;
+                        window.appState = appState = parsed;
+                        saveAllData(false); populateSelectors(); closeModal('backupModal');
+                        showToast('تمت استعادة النسخة الاحتياطية بنجاح!');
+                    });
             };
+            reader.onerror = () => showToast('تعذر قراءة الملف', 'error');
             reader.readAsText(file);
             event.target.value = '';
         }
 
         function confirmResetDemoData() {
-            showConfirm('إعادة ضبط البيانات', 'سيتم استبدال البيانات الحالية ببيانات تجريبية لـ 22 طالباً. هل تود المتابعة؟', () => {
+            showConfirm('إعادة ضبط البيانات', 'سيتم استبدال بياناتك الحالية (وحساب السحابة) ببيانات تجريبية لـ 22 طالباً. تُحفظ نسخة تلقائية قبل الاستبدال. هل تود المتابعة؟', () => {
+                safetySnapshot('before-demo-reset');
                 window.appState = appState = createDemoData();
                 window.appState = appState; saveAllData(false); populateSelectors(); closeModal('backupModal');
                 showToast('تم توليد البيانات التجريبية بنجاح');
@@ -2266,7 +2503,7 @@
 
             document.getElementById('statsModalBody').innerHTML = `
                 <div class="bg-emerald-50 border border-emerald-200 rounded-2xl p-4 text-center">
-                    <span class="text-xs font-bold text-emerald-700">نسبة النجاح حسب (${targetCol.label})</span>
+                    <span class="text-xs font-bold text-emerald-700">نسبة النجاح حسب (${cdEsc(targetCol.label)})</span>
                     <div class="text-4xl font-extrabold text-emerald-600 my-1">${passRate}%</div>
                     <div class="w-full bg-emerald-200 h-2.5 rounded-full overflow-hidden mt-2">
                         <div class="bg-emerald-600 h-full rounded-full" style="width: ${passRate}%"></div>
@@ -2294,11 +2531,16 @@
             const sectionObj = getCurrentSectionObj();
             if (!sectionObj) return;
             if (!sectionObj.notes) sectionObj.notes = [];
-            document.getElementById('noteStudentSelect').innerHTML = sectionObj.students.map(s => `<option value="${s.name}">${s.name}</option>`).join('');
+            document.getElementById('noteStudentSelect').innerHTML = sectionObj.students.map(s => `<option value="${cdEsc(s.id)}">${cdEsc(s.name)}</option>`).join('');
             renderNotesList();
             openModal('notesModal');
         }
 
+        function noteName(n) {
+            const sec = getCurrentSectionObj();
+            const st = sec && n.studentId && sec.students.find(x => x.id === n.studentId);
+            return st ? st.name : n.studentName;
+        }
         function renderNotesList() {
             const sectionObj = getCurrentSectionObj();
             const container = document.getElementById('notesListContainer');
@@ -2311,22 +2553,24 @@
                     <div class="bg-slate-50 border border-slate-200 p-3 rounded-2xl flex items-start justify-between gap-2">
                         <div>
                             <div class="flex items-center gap-2 mb-1">
-                                <span class="font-extrabold text-xs text-rose-700">${n.studentName}</span>
-                                <span class="text-[10px] text-slate-400 font-semibold">${n.date}</span>
+                                <span class="font-extrabold text-xs text-rose-700">${cdEsc(noteName(n))}</span>
+                                <span class="text-[10px] text-slate-400 font-semibold">${cdEsc(n.date)}</span>
                             </div>
-                            <p class="text-xs text-slate-700 font-medium">${n.text}</p>
+                            <p class="text-xs text-slate-700 font-medium">${cdEsc(n.text)}</p>
                         </div>
-                        <button onclick="deleteStudentNote('${n.id}')" class="text-slate-400 hover:text-rose-600 p-1"><i class="fa-solid fa-trash-can text-xs"></i></button>
+                        <button data-act="delNote" data-v="${cdEsc(n.id)}" class="text-slate-400 hover:text-rose-600 p-1"><i class="fa-solid fa-trash-can text-xs"></i></button>
                     </div>
                 `).join('');
         }
 
         function addStudentNote() {
             const sectionObj = getCurrentSectionObj();
-            const studentName = document.getElementById('noteStudentSelect').value;
+            const sid = document.getElementById('noteStudentSelect').value;
+            const stu = sectionObj.students.find(x => x.id === sid);
+            const studentName = stu ? stu.name : '';
             const text = document.getElementById('noteTextInput').value.trim();
             if (!studentName || !text) { showToast('يرجى اختيار الطالب وكتابة الملاحظة', 'error'); return; }
-            sectionObj.notes.unshift({ id: 'note_' + Date.now(), studentName, text, date: new Date().toLocaleDateString('ar-IQ') });
+            sectionObj.notes.unshift({ id: 'note_' + Date.now(), studentId: sid, studentName, text, date: new Date().toLocaleDateString('ar-IQ') });
             document.getElementById('noteTextInput').value = '';
             renderNotesList(); window.appState = appState; saveAllData(false); showToast('تمت إضافة الملاحظة');
         }
@@ -2646,18 +2890,23 @@
         }
         function exportToPDF() { updateHeaderUI(); buildPrintTable(); setTimeout(() => window.print(), 150); }
 
+        function csvCell(v) {
+            let t = String(v == null ? '' : v);
+            if (/^[=+\-@\t\r]/.test(t)) t = "'" + t;   // منع حقن صيغ Excel
+            return '"' + t.replace(/"/g, '""') + '"';
+        }
         function exportToExcel() {
             const sectionObj = getCurrentSectionObj();
             if (!sectionObj || sectionObj.students.length === 0) { showToast('لا توجد بيانات لتصديرها', 'error'); return; }
             let csvContent = '\uFEFF';
-            csvContent += `"${[appState.meta.schoolName, appState.meta.subjectName, appState.meta.teacherName].filter(Boolean).join(' - ')}"\n`;
-            csvContent += `"السنة الدراسية: ${appState.selectedYear} | ${appState.selectedClass} - ${appState.selectedSection}"\n\n`;
+            csvContent += csvCell([appState.meta.schoolName, appState.meta.subjectName, appState.meta.teacherName].filter(Boolean).join(' - ')) + '\n';
+            csvContent += csvCell(`السنة الدراسية: ${appState.selectedYear} | ${appState.selectedClass} - ${appState.selectedSection}`) + '\n\n';
             const headers = ['ت', 'اسم الطالب', ...appState.columns.map(c => `${c.group} - ${c.label} (${c.max})`)];
-            csvContent += headers.map(h => `"${h}"`).join(',') + '\n';
+            csvContent += headers.map(csvCell).join(',') + '\n';
             sectionObj.students.forEach((st, idx) => {
                 const comp = computeStudentValues(st);
                 const row = [idx + 1, st.name, ...appState.columns.map(c => comp[c.id] !== '' ? comp[c.id] : '')];
-                csvContent += row.map(val => `"${val}"`).join(',') + '\n';
+                csvContent += row.map(csvCell).join(',') + '\n';
             });
             const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
             const url = URL.createObjectURL(blob);
@@ -2671,6 +2920,16 @@
             showToast('تم تصدير ملف Excel بنجاح');
         }
 
+        // معالج أحداث موحّد بدل onclick المحقونة (دفعة 1: أمان)
+        document.addEventListener('click', function (e) {
+            const b = e.target.closest && e.target.closest('[data-act]');
+            if (!b) return;
+            const map = { selYear: selectYearFromModal, delYear: deleteYear, selClass: selectClassFromModal, delClass: deleteClass,
+                          selSection: selectSectionFromModal, delSection: deleteSection, delStudent: deleteSingleStudent, delNote: deleteStudentNote };
+            const fn = map[b.dataset.act];
+            if (fn) fn(b.dataset.v);
+        });
+
         function showConfirm(title, message, onConfirmCallback) {
             document.getElementById('confirmTitle').textContent = title;
             document.getElementById('confirmMessage').textContent = message;
@@ -2680,6 +2939,7 @@
 
         // بدء التشغيل الفوري
         window.addEventListener('DOMContentLoaded', async () => {
+            showLock();
             let recovered = false;
             try {
                 if (!localStorage.getItem(STORAGE_KEY)) {
@@ -2695,6 +2955,7 @@
             } catch (e) {}
 
             loadAppState();
+            autoDailySnapshot();
             populateSelectors();
             toggleDarkMode(localStorage.getItem('teacher_register_dark_mode') === '1');
             checkBackupReminder();
@@ -2721,7 +2982,14 @@
         // تسجيل Service Worker ليعمل التطبيق بدون إنترنت بعد أول فتح
         if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {
             window.addEventListener('load', () => {
-                navigator.serviceWorker.register('sw.js').catch(() => {});
+                navigator.serviceWorker.register('sw.js').then(reg => {
+                    reg.addEventListener('updatefound', () => {
+                        const w = reg.installing;
+                        if (w) w.addEventListener('statechange', () => {
+                            if (w.state === 'installed' && navigator.serviceWorker.controller && typeof showToast === 'function') showToast('يوجد تحديث جديد للتطبيق، أغلقه وافتحه مرة أخرى لتفعيله');
+                        });
+                    });
+                }).catch(() => {});
             });
         }
     </script>
@@ -2729,7 +2997,7 @@
     <!-- Firebase SDK & المزامنة السحابية -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-        import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, onAuthStateChanged, sendPasswordResetEmail } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+        import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, onAuthStateChanged, sendPasswordResetEmail, sendEmailVerification } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
         import { getFirestore, doc, setDoc, getDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
         const firebaseConfig = {
@@ -2774,21 +3042,70 @@
             }
         }
 
-        window.pushToCloud = async function(manual = false) {
+        const K_TS = 'teacher_register_cloud_ts', K_DIRTY = 'teacher_register_dirty', K_STATE = 'electronic_teacher_grader_v2';
+        const validState = s => !!(s && typeof s === 'object' && s.meta && s.years && Array.isArray(s.columns));
+        const isBlank = s => !s || !s.years || Object.values(s.years).every(y => Object.values((y && y.classes) || {}).every(c => Object.values((c && c.sections) || {}).every(sec => !((sec && sec.students) || []).length)));
+        const nowText = () => new Date().toLocaleTimeString('ar-IQ', { hour: '2-digit', minute: '2-digit' });
+        function setSyncText(t, bad) { const el = document.getElementById('cloudLastSyncText'); if (el) { el.textContent = t; el.style.color = bad ? '#e11d48' : ''; } }
+
+        function applyRemote(remote, ts, label) {
+            isApplyingRemote = true;
+            try {
+                window.appState = appState = remote;
+                localStorage.setItem(K_STATE, JSON.stringify(remote));
+                localStorage.setItem(K_TS, ts || '');
+                localStorage.setItem(K_DIRTY, '0');
+                if (typeof scheduleMirror === 'function') scheduleMirror();
+                populateSelectors(); renderGradesTable();
+            } finally { isApplyingRemote = false; }
+            setSyncText(label + ': ' + nowText());
+        }
+
+        // القرار: same | local | remote
+        function decide(remoteData, remoteState) {
+            if (JSON.stringify(remoteState) === JSON.stringify(window.appState)) return 'same';
+            const raw = localStorage.getItem(K_DIRTY);
+            const dirty = raw === null ? true : raw === '1';
+            if (!dirty || isBlank(window.appState)) return 'remote';
+            if ((remoteData.updatedAt || '') === (localStorage.getItem(K_TS) || '')) return 'local';   // السحابة لم تتغير منذ آخر مزامنة
+            return confirm('تنبيه: توجد تعديلات على هذا الجهاز لم تُرفع، وفي السحابة نسخة مختلفة (من جهاز آخر أو من وقت سابق).\n\nموافق = اعتماد نسخة هذا الجهاز ورفعها (تُحفظ نسخة السحابة احتياطياً).\nإلغاء = جلب نسخة السحابة (تُحفظ نسخة هذا الجهاز احتياطياً).') ? 'local' : 'remote';
+        }
+
+        window.pushToCloud = async function(manual = false, force = false) {
             if (!currentCloudUser || !window.appState || isApplyingRemote) return;
+            if (navigator.onLine === false) { setSyncText('بلا إنترنت: التعديلات محفوظة على الجهاز وستُرفع عند عودة الاتصال', true); return; }
+            const seq = window.__saveSeq || 0;
             try {
                 const docRef = doc(db, 'teachers_data', currentCloudUser.uid);
+                if (!force) {
+                    const cur = await getDoc(docRef);
+                    const cd = cur.exists() ? cur.data() : null;
+                    if (cd && cd.payload && (cd.updatedAt || '') !== (localStorage.getItem(K_TS) || '')) {
+                        let remote = null; try { remote = JSON.parse(cd.payload); } catch (e) {}
+                        if (validState(remote)) {
+                            const d = decide(cd, remote);
+                            if (d === 'same') { localStorage.setItem(K_TS, cd.updatedAt || ''); localStorage.setItem(K_DIRTY, '0'); setSyncText('متزامن: ' + nowText()); return; }
+                            if (d === 'remote') { await window.safetySnapshot('local-before-pull'); applyRemote(remote, cd.updatedAt, 'تم التحديث من السحابة'); showToast('تم جلب تعديلات أحدث من جهاز آخر'); return; }
+                            await window.safetySnapshot('cloud-copy-before-overwrite', cd.payload);
+                        }
+                    }
+                }
+                const json = JSON.stringify(window.appState);
+                if (new TextEncoder().encode(json).length > 1000000) {
+                    setSyncText('حجم البيانات تجاوز حد السحابة (1MB): لم تُرفع. احفظ نسخة احتياطية وأرشف السنوات القديمة', true);
+                    if (manual) showToast('حجم البيانات أكبر من حد السحابة', 'error');
+                    return;
+                }
                 const nowIso = new Date().toISOString();
-                await setDoc(docRef, {
-                    email: currentCloudUser.email,
-                    updatedAt: nowIso,
-                    payload: JSON.stringify(window.appState)
-                }, { merge: true });
-                const syncEl = document.getElementById('cloudLastSyncText');
-                if (syncEl) syncEl.textContent = `آخر مزامنة سحابية: ${new Date().toLocaleTimeString('ar-IQ', { hour: '2-digit', minute: '2-digit' })}`;
+                window.__lastPushedTs = nowIso;
+                await setDoc(docRef, { email: currentCloudUser.email, updatedAt: nowIso, payload: json }, { merge: true });
+                localStorage.setItem(K_TS, nowIso);
+                if ((window.__saveSeq || 0) === seq) localStorage.setItem(K_DIRTY, '0');
+                setSyncText('آخر مزامنة سحابية: ' + nowText());
                 if (manual) showToast('تم رفع البيانات إلى السحابة بنجاح');
             } catch (err) {
                 console.error(err);
+                setSyncText('تعذّرت المزامنة (بياناتك محفوظة على الجهاز): ' + authErrMsg(err), true);
                 if (manual) showToast('تعذر الرفع للسحابة: ' + authErrMsg(err), 'error');
             }
         };
@@ -2796,36 +3113,39 @@
         window.pullFromCloud = async function(manual = false) {
             if (!currentCloudUser) return;
             try {
-                const docRef = doc(db, 'teachers_data', currentCloudUser.uid);
-                const snap = await getDoc(docRef);
-                if (snap.exists() && snap.data().payload) {
-                    const remoteState = JSON.parse(snap.data().payload);
-                    if (remoteState && remoteState.years && remoteState.columns) {
-                        isApplyingRemote = true;
-                        window.appState = appState = remoteState;
-                        localStorage.setItem('electronic_teacher_grader_v2', JSON.stringify(window.appState));
-                        populateSelectors();
-                        renderGradesTable();
-                        isApplyingRemote = false;
-                        const syncEl = document.getElementById('cloudLastSyncText');
-                        if (syncEl) syncEl.textContent = `تم التحديث من السحابة: ${new Date().toLocaleTimeString('ar-IQ', { hour: '2-digit', minute: '2-digit' })}`;
-                        if (manual) showToast('تم جلب أحدث البيانات من السحابة بنجاح');
+                const snap = await getDoc(doc(db, 'teachers_data', currentCloudUser.uid));
+                const data = snap.exists() ? snap.data() : null;
+                if (data && data.payload) {
+                    let remote = null; try { remote = JSON.parse(data.payload); } catch (e) {}
+                    if (!validState(remote)) { showToast('بيانات السحابة غير صالحة ولم تُطبَّق، بياناتك المحلية سليمة', 'error'); return; }
+                    const d = decide(data, remote);
+                    if (d === 'same') {
+                        localStorage.setItem(K_TS, data.updatedAt || ''); localStorage.setItem(K_DIRTY, '0');
+                        setSyncText('متزامن: ' + nowText());
+                        if (manual) showToast('بياناتك محدّثة');
+                        return;
                     }
+                    if (d === 'local') { await window.safetySnapshot('cloud-copy-before-overwrite', data.payload); await window.pushToCloud(manual, true); return; }
+                    await window.safetySnapshot('local-before-pull');
+                    applyRemote(remote, data.updatedAt, 'تم التحديث من السحابة');
+                    if (manual) showToast('تم جلب أحدث البيانات من السحابة بنجاح');
                 } else {
                     if (manual) showToast('لا توجد بيانات محفوظة في السحابة بعد، سيتم رفع بياناتك الحالية');
-                    await window.pushToCloud(false);
+                    await window.pushToCloud(false, true);
                 }
             } catch (err) {
-                isApplyingRemote = false;
                 console.error(err);
+                setSyncText('تعذّر الاتصال بالسحابة (بياناتك المحلية سليمة): ' + authErrMsg(err), true);
                 if (manual) showToast('تعذر جلب البيانات من السحابة: ' + authErrMsg(err), 'error');
             }
         };
 
+        window.addEventListener('online', () => { if (currentCloudUser && localStorage.getItem(K_DIRTY) !== '0') window.pushToCloud(false); });
+
         window.scheduleCloudSync = function() {
             if (!currentCloudUser || isApplyingRemote) return;
             clearTimeout(cloudSyncTimer);
-            cloudSyncTimer = setTimeout(() => window.pushToCloud(false), 1500);
+            cloudSyncTimer = setTimeout(() => window.pushToCloud(false), 4000);
         };
 
         function authErrMsg(err) {
@@ -2880,9 +3200,11 @@
                 const maybeNew = ['auth/user-not-found','auth/invalid-credential','auth/invalid-login-credentials'].includes(c);
                 if (!maybeNew) { console.error(err); showToast('تعذر الدخول: ' + authErrMsg(err), 'error'); return; }
             }
+            if (!confirm('لا يوجد حساب بهذا البريد (أو كلمة المرور غير صحيحة).\n\nالبريد: ' + email + '\n\nهل تريد إنشاء حساب جديد بهذا البريد؟ تأكد أنه مكتوب بشكل صحيح، فلا يمكن استرجاع الحساب إن أخطأت فيه.')) return;
             try {
-                await createUserWithEmailAndPassword(auth, email, pass);
-                showToast('تم إنشاء الحساب ورفع بياناتك للسحابة');
+                const cred = await createUserWithEmailAndPassword(auth, email, pass);
+                try { await sendEmailVerification(cred.user); } catch (e) {}
+                showToast('تم إنشاء الحساب، أُرسل رابط تأكيد البريد إلى ' + email);
             } catch (err) {
                 console.error(err);
                 if (err && err.code === 'auth/email-already-in-use') showToast('كلمة المرور غير صحيحة لهذا البريد', 'error');
@@ -2909,8 +3231,9 @@
             if (!email || pass.length < 6) { showToast('أدخل بريداً صحيحاً وكلمة مرور من 6 أحرف على الأقل', 'error'); return; }
             try {
                 showToast('جارٍ إنشاء الحساب...');
-                await createUserWithEmailAndPassword(auth, email, pass);
-                showToast('تم إنشاء الحساب وربطه بالسحابة بنجاح');
+                const cred = await createUserWithEmailAndPassword(auth, email, pass);
+                try { await sendEmailVerification(cred.user); } catch (e) {}
+                showToast('تم إنشاء الحساب وربطه بالسحابة، أُرسل رابط تأكيد البريد');
             } catch (err) {
                 console.error(err); showToast('تعذر إنشاء الحساب: ' + authErrMsg(err), 'error');
             }
@@ -2918,9 +3241,12 @@
 
         window.cloudLogout = async function() {
             try {
+                if (localStorage.getItem(K_DIRTY) !== '0') await window.pushToCloud(false);   // محاولة أخيرة لرفع آخر التعديلات
+                const synced = localStorage.getItem(K_DIRTY) === '0';
                 if (unsubscribeSnapshot) { unsubscribeSnapshot(); unsubscribeSnapshot = null; }
                 await signOut(auth);
                 showToast('تم تسجيل الخروج من السحابة');
+                if (synced && confirm('هل تريد أيضاً مسح بيانات السجل من هذا الجهاز؟ (مناسب للأجهزة المشتركة). بياناتك محفوظة في السحابة.')) await window.wipeLocalData();
             } catch (err) {}
         };
 
@@ -2929,24 +3255,32 @@
             updateCloudUI(user);
             if (unsubscribeSnapshot) { unsubscribeSnapshot(); unsubscribeSnapshot = null; }
             if (user) {
+                const owner = localStorage.getItem('teacher_register_owner');
+                if (owner && owner !== user.uid && !isBlank(window.appState)) {
+                    if (!confirm('بيانات السجل الموجودة على هذا الجهاز تخص حساباً آخر.\nموافق = مسحها وبدء حسابك نظيفاً.\nإلغاء = تسجيل الخروج دون مسح.')) { await signOut(auth); return; }
+                    await window.wipeLocalData(); return;
+                }
+                localStorage.setItem('teacher_register_owner', user.uid);
                 await window.pullFromCloud(false);
                 const docRef = doc(db, 'teachers_data', user.uid);
                 unsubscribeSnapshot = onSnapshot(docRef, (snap) => {
-                    if (snap.exists() && snap.data().payload && !snap.metadata.hasPendingWrites) {
-                        try {
-                            const remoteState = JSON.parse(snap.data().payload);
-                            if (remoteState && remoteState.years && JSON.stringify(remoteState) !== JSON.stringify(window.appState)) {
-                                isApplyingRemote = true;
-                                window.appState = appState = remoteState;
-                                localStorage.setItem('electronic_teacher_grader_v2', JSON.stringify(window.appState));
-                                populateSelectors();
-                                renderGradesTable();
-                                isApplyingRemote = false;
-                                const syncEl = document.getElementById('cloudLastSyncText');
-                                if (syncEl) syncEl.textContent = `مزامنة لحظية: ${new Date().toLocaleTimeString('ar-IQ', { hour: '2-digit', minute: '2-digit' })}`;
-                            }
-                        } catch (e) { isApplyingRemote = false; }
-                    }
+                    if (!snap.exists() || !snap.data().payload || snap.metadata.hasPendingWrites) return;
+                    const data = snap.data();
+                    if (data.updatedAt === window.__lastPushedTs || data.updatedAt === localStorage.getItem(K_TS)) return;
+                    let remote = null; try { remote = JSON.parse(data.payload); } catch (e) {}
+                    if (!validState(remote) || JSON.stringify(remote) === JSON.stringify(window.appState)) return;
+                    const tryApply = async () => {
+                        const act = document.activeElement;
+                        if (act && act.classList && act.classList.contains('grade-input')) { setTimeout(tryApply, 2500); return; }
+                        if (localStorage.getItem(K_DIRTY) !== '0') {
+                            await window.safetySnapshot('remote-ignored-local-dirty', data.payload);
+                            setSyncText('وصل تعديل من جهاز آخر ولم يُطبَّق لوجود تعديلات محلية، سيُحسم عند المزامنة', true);
+                            return;
+                        }
+                        await window.safetySnapshot('local-before-live-update');
+                        applyRemote(remote, data.updatedAt, 'مزامنة لحظية');
+                    };
+                    tryApply();
                 });
             }
         });
