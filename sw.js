@@ -1,9 +1,20 @@
 // Service Worker — سجل المدرس الإلكتروني
-const CACHE = 'teacher-register-v22-firebase-2.5.5';
-const CORE = ['./', './index.html', './manifest.webmanifest', './icons/icon-192.png', './icons/icon-512.png'];
+const CACHE = 'teacher-register-v24-firebase-2.5.6';
+const CORE = ['./', './manifest.webmanifest', './icons/icon-192.png', './icons/icon-512.png'];
+
+// لا نرجّع استجابة محوّلة (redirect) لطلب تنقّل: المتصفح يرفضها ويعطي ERR_FAILED
+async function clean(res) {
+  if (!res || !res.redirected) return res;
+  const body = await res.blob();
+  return new Response(body, { status: res.status, statusText: res.statusText, headers: res.headers });
+}
 
 self.addEventListener('install', e => {
-  e.waitUntil(caches.open(CACHE).then(c => c.addAll(CORE)).then(() => self.skipWaiting()));
+  e.waitUntil(
+    caches.open(CACHE)
+      .then(c => Promise.all(CORE.map(u => fetch(u).then(r => clean(r)).then(r => r && r.ok ? c.put(u, r) : null))))
+      .then(() => self.skipWaiting())
+  );
 });
 
 self.addEventListener('activate', e => {
@@ -18,15 +29,18 @@ self.addEventListener('activate', e => {
 self.addEventListener('fetch', e => {
   const req = e.request;
   if (req.method !== 'GET' || req.url.includes('firestore.googleapis.com') || req.url.includes('identitytoolkit.googleapis.com')) return;
+  const isNav = req.mode === 'navigate';
+  const key = isNav ? './' : req;
   e.respondWith(
-    caches.match(req).then(cached => {
-      const network = fetch(req).then(res => {
-        if (res && (res.ok || res.type === 'opaque')) {
-          const copy = res.clone();
-          caches.open(CACHE).then(c => c.put(req, copy));
+    caches.match(key).then(cached => {
+      const network = fetch(req).then(async res => {
+        const out = await clean(res);
+        if (out && (out.ok || out.type === 'opaque')) {
+          const copy = out.clone();
+          caches.open(CACHE).then(c => c.put(key, copy));
         }
-        return res;
-      }).catch(() => cached || (req.mode === 'navigate' ? caches.match('./index.html') : undefined));
+        return out;
+      }).catch(() => cached || (isNav ? caches.match('./') : undefined));
       return cached || network;
     })
   );
