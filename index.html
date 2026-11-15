@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>سجل المدرس الإلكتروني - إصدار 2.7.5</title>
+    <title>سجل المدرس الإلكتروني - إصدار 2.9.0</title>
     <!-- ===== إعدادات التطبيق (PWA) ===== -->
     <meta name="theme-color" content="#1e3a8a">
     <meta name="mobile-web-app-capable" content="yes">
@@ -324,6 +324,7 @@
         body.dark-mode .cs-opt:active{background:#334155}
         body.dark-mode .cs-opt.on{background:#1e3a8a;color:#bfdbfe}
 
+        .partial-calc{text-decoration:underline dotted #b45309;text-underline-offset:3px}
     </style>
 </head>
 <body class="pb-12">
@@ -1003,6 +1004,11 @@
                     <span class="flex-1"><span class="block text-sm font-extrabold text-slate-800">الوضع الداكن</span><span class="block text-[11px] text-slate-500 font-semibold">تبديل المظهر</span></span>
                     <i class="fa-solid fa-chevron-left text-slate-300 text-xs"></i>
                 </button>
+                <button onclick="openYearWipe()" class="w-full flex items-center gap-3 bg-slate-50 hover:bg-slate-100 active:scale-[0.99] border border-slate-200 rounded-2xl px-3 py-3 text-right transition">
+                    <span class="w-10 h-10 rounded-xl bg-orange-100 text-orange-700 flex items-center justify-center text-base shrink-0"><i class="fa-solid fa-broom"></i></span>
+                    <span class="flex-1"><span class="block text-sm font-extrabold text-slate-800">تصفية نهاية السنة</span><span class="block text-[11px] text-slate-500 font-semibold">بدء سنة جديدة ببيانات نظيفة</span></span>
+                    <i class="fa-solid fa-chevron-left text-slate-300 text-xs"></i>
+                </button>
                 <button onclick="closeModal('settingsModal');undoLastDelete()" class="w-full flex items-center gap-3 bg-slate-50 hover:bg-slate-100 active:scale-[0.99] border border-slate-200 rounded-2xl px-3 py-3 text-right transition">
                     <span class="w-10 h-10 rounded-xl bg-rose-100 text-rose-700 flex items-center justify-center text-base shrink-0"><i class="fa-solid fa-rotate-left"></i></span>
                     <span class="flex-1"><span class="block text-sm font-extrabold text-slate-800">التراجع عن آخر حذف</span><span class="block text-[11px] text-slate-500 font-semibold">استرجاع ما حذفته</span></span>
@@ -1010,10 +1016,72 @@
                 </button>
                 <div class="mt-3 pt-3 border-t border-slate-200 text-center space-y-0.5">
                     <p class="text-[12px] font-extrabold text-slate-700">سجل المدرس الإلكتروني</p>
-                    <p class="text-[11px] font-bold text-slate-500">الإصدار 2.7.5</p>
+                    <p class="text-[11px] font-bold text-slate-500">الإصدار 2.9.0</p>
                     <p class="text-[11px] font-semibold text-slate-500">جميع الحقوق محفوظة © 2026</p>
                     <p class="text-[11px] font-semibold text-slate-500">المطوّر: <span class="font-extrabold text-blue-800">مصطفى سامي</span></p>
                 </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- نافذة تصفية نهاية السنة (2.8.0) -->
+    <div id="yearWipeModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden items-center justify-center p-3 sm:p-4 overflow-y-auto">
+        <div class="bg-white rounded-3xl w-full max-w-md max-h-[92vh] flex flex-col shadow-2xl overflow-hidden">
+            <div class="bg-gradient-to-l from-orange-700 to-rose-700 text-white p-4 flex items-center justify-between">
+                <h3 class="font-extrabold text-base flex items-center gap-2"><i class="fa-solid fa-broom"></i> تصفية نهاية السنة</h3>
+                <button onclick="closeModal('yearWipeModal')" class="w-8 h-8 rounded-full bg-white/10 hover:bg-white/25 flex items-center justify-center transition"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <div id="ywBody" class="p-4 overflow-y-auto space-y-3.5 text-right">
+                <div class="bg-slate-50 border border-slate-200 rounded-2xl p-3 space-y-2">
+                    <div class="flex items-center justify-between text-xs font-bold text-slate-600">
+                        <span>السنة المحددة: <span id="ywYearName" class="font-extrabold text-slate-900"></span></span>
+                        <span id="ywSizeText" class="text-[11px]"></span>
+                    </div>
+                    <div class="h-2 rounded-full bg-slate-200 overflow-hidden"><div id="ywSizeBar" class="h-full bg-emerald-500 rounded-full" style="width:0%"></div></div>
+                    <p class="text-[11px] text-slate-500 font-semibold">حجم بياناتك مقابل حد المزامنة السحابية (1000KB).</p>
+                </div>
+
+                <div>
+                    <p class="text-xs font-extrabold text-slate-800 mb-1.5">1) ما الذي يُحذف؟</p>
+                    <div class="space-y-1.5">
+                        <label class="flex items-center gap-2.5 bg-rose-50 border border-rose-200 rounded-xl px-3 py-2.5 cursor-pointer"><input type="checkbox" id="ywGrades" checked class="w-4 h-4 accent-rose-600" onchange="ywRender()"><span class="flex-1 text-sm font-bold text-slate-800">الدرجات</span><span id="ywCntGrades" class="text-[11px] font-extrabold text-rose-700"></span></label>
+                        <label class="flex items-center gap-2.5 bg-rose-50 border border-rose-200 rounded-xl px-3 py-2.5 cursor-pointer"><input type="checkbox" id="ywConduct" checked class="w-4 h-4 accent-rose-600" onchange="ywRender()"><span class="flex-1 text-sm font-bold text-slate-800">الغياب والمشاغبة</span><span id="ywCntConduct" class="text-[11px] font-extrabold text-rose-700"></span></label>
+                        <label class="flex items-center gap-2.5 bg-rose-50 border border-rose-200 rounded-xl px-3 py-2.5 cursor-pointer"><input type="checkbox" id="ywNotes" checked class="w-4 h-4 accent-rose-600" onchange="ywRender()"><span class="flex-1 text-sm font-bold text-slate-800">ملاحظات الطلاب</span><span id="ywCntNotes" class="text-[11px] font-extrabold text-rose-700"></span></label>
+                    </div>
+                </div>
+
+                <div>
+                    <p class="text-xs font-extrabold text-slate-800 mb-1.5">2) الطلاب</p>
+                    <div class="space-y-1.5">
+                        <label class="flex items-start gap-2.5 bg-emerald-50 border border-emerald-200 rounded-xl px-3 py-2.5 cursor-pointer"><input type="radio" name="ywStudents" value="keep" checked class="w-4 h-4 mt-0.5 accent-emerald-600" onchange="ywRender()"><span class="flex-1"><span class="block text-sm font-bold text-slate-800">إبقاء الطلاب (ترقية)</span><span class="block text-[11px] text-slate-500 font-semibold">تبقى الأسماء في شعبها ولا تعيد إدخالها</span></span><span id="ywCntStudents" class="text-[11px] font-extrabold text-emerald-700"></span></label>
+                        <label class="flex items-start gap-2.5 bg-rose-50 border border-rose-200 rounded-xl px-3 py-2.5 cursor-pointer"><input type="radio" name="ywStudents" value="delete" class="w-4 h-4 mt-0.5 accent-rose-600" onchange="ywRender()"><span class="flex-1"><span class="block text-sm font-bold text-slate-800">حذف الطلاب أيضاً</span><span class="block text-[11px] text-slate-500 font-semibold">تبدأ بأسماء جديدة (يحذف معها كل ما سبق)</span></span></label>
+                    </div>
+                </div>
+
+                <div class="bg-sky-50 border border-sky-200 rounded-xl px-3 py-2.5">
+                    <p class="text-[11px] font-extrabold text-sky-900 mb-0.5">لا يُحذف أبداً</p>
+                    <p class="text-[11px] text-sky-800 font-semibold leading-relaxed">الصفوف والشعب، أعمدة الدرجات وهيكل السجل، بيانات المدرس والمدرسة، الإعدادات، رمز القفل.</p>
+                </div>
+
+                <div>
+                    <p class="text-xs font-extrabold text-slate-800 mb-1.5">3) اسم السنة الجديدة <span class="text-slate-400 font-semibold">(اختياري)</span></p>
+                    <input type="text" id="ywNewName" placeholder="اكتب الاسم مثل 2026-2027" autocomplete="off" class="w-full border border-slate-300 rounded-xl px-3 py-2.5 text-sm font-bold focus:outline-none focus:ring-2 focus:ring-orange-300">
+                </div>
+
+                <div>
+                    <p class="text-xs font-extrabold text-slate-800 mb-1.5">4) نسخة احتياطية (إجبارية)</p>
+                    <button id="ywBackupBtn" onclick="ywBackup()" class="w-full flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-sm py-3 rounded-xl transition"><i class="fa-solid fa-download"></i> <span id="ywBackupLabel">تنزيل النسخة الاحتياطية</span></button>
+                    <p id="ywBackupState" class="text-[11px] font-bold text-rose-600 mt-1.5 text-center">لم تُنزَّل نسخة بعد، والتنفيذ مقفل حتى تنزيلها وتأكيدها.</p>
+                </div>
+
+                <div>
+                    <p class="text-xs font-extrabold text-slate-800 mb-1.5">5) التأكيد</p>
+                    <input type="text" id="ywConfirmInput" oninput="ywRender()" placeholder="اكتب كلمة: تصفية" autocomplete="off" class="w-full border border-slate-300 rounded-xl px-3 py-2.5 text-sm font-bold text-center focus:outline-none focus:ring-2 focus:ring-rose-300">
+                </div>
+            </div>
+            <div id="ywFooter" class="p-3 border-t border-slate-200 bg-slate-50 grid grid-cols-3 gap-2">
+                <button onclick="closeModal('yearWipeModal')" class="col-span-1 bg-white border border-slate-300 text-slate-700 font-bold text-sm py-2.5 rounded-xl">إلغاء</button>
+                <button id="ywRunBtn" onclick="ywRun()" disabled class="col-span-2 bg-rose-600 text-white font-extrabold text-sm py-2.5 rounded-xl transition disabled:opacity-40 disabled:cursor-not-allowed"><i class="fa-solid fa-broom ml-1"></i> تنفيذ التصفية</button>
             </div>
         </div>
     </div>
@@ -1288,7 +1356,7 @@
         }
 
         // ===== استرجاع من نسخ الأمان =====
-        const SNAP_LABELS = { 'auto-daily': 'نسخة يومية تلقائية', 'before-restore': 'قبل استعادة نسخة', 'before-undo': 'قبل التراجع عن حذف', 'before-demo-reset': 'قبل إعادة الضبط التجريبي', 'local-before-pull': 'قبل جلب نسخة السحابة', 'local-before-live-update': 'قبل تحديث لحظي', 'cloud-copy-before-overwrite': 'نسخة السحابة قبل استبدالها', 'remote-ignored-local-dirty': 'تعديل وارد من جهاز آخر', 'before-snapshot-restore': 'قبل استرجاع نسخة أمان' };
+        const SNAP_LABELS = { 'auto-daily': 'نسخة يومية تلقائية', 'before-restore': 'قبل استعادة نسخة', 'before-undo': 'قبل التراجع عن حذف', 'before-structure': 'قبل تعديل هيكل الجدول', 'before-demo-reset': 'قبل إعادة الضبط التجريبي', 'local-before-pull': 'قبل جلب نسخة السحابة', 'local-before-live-update': 'قبل تحديث لحظي', 'cloud-copy-before-overwrite': 'نسخة السحابة قبل استبدالها', 'remote-ignored-local-dirty': 'تعديل وارد من جهاز آخر', 'before-snapshot-restore': 'قبل استرجاع نسخة أمان' };
         async function openSnapshots() {
             const list = (await idbGet('snapshots')) || [];
             const old = document.getElementById('snapSheet'); if (old) old.remove();
@@ -1456,7 +1524,9 @@
         function saveAllData(showToastMsg = false) {
             try {
                 appState.schemaVersion = SCHEMA_VERSION;
-                localStorage.setItem(STORAGE_KEY, JSON.stringify(appState));
+                const rawState = JSON.stringify(appState);
+                localStorage.setItem(STORAGE_KEY, rawState);
+                try { ywCheckSize(rawState); } catch (e) {}
                 localStorage.setItem('teacher_register_dirty', '1');
                 window.__saveSeq = (window.__saveSeq || 0) + 1;
                 scheduleMirror();
@@ -1502,50 +1572,61 @@
             return c.sections[appState.selectedSection] || null;
         }
 
-        // حساب المجاميع والمعدلات تلقائياً
+        // حساب المجاميع والمعدلات تلقائياً (مجموع / معدل / أعلى شهرين ÷ 2)
+        // الحساب يتبع ترتيب الاعتماد وليس ترتيب الأعمدة، وأي ارتباط دائري يُتجاهل بدل أن يعلق الجدول
         function computeStudentValues(student) {
             const computed = {};
+            const partial = {};
             const grades = student.grades || {};
+            const byId = {};
+            appState.columns.forEach(c => { byId[c.id] = c; });
+            const state = {};
+            const zeroPolicy = appState.absentPolicy === 'zero';
 
-            appState.columns.forEach(col => {
+            function calc(id) {
+                if (state[id] === 2) return computed[id];
+                const col = byId[id];
+                if (!col) return '';
+                if (state[id] === 1) return '';
+                state[id] = 1;
+                let result = '';
                 if (col.type === 'input') {
                     const val = grades[col.id];
-                    computed[col.id] = (val !== undefined && val !== '') ? val : '';
-                }
-            });
-
-            appState.columns.forEach(col => {
-                if (col.type === 'sum' || col.type === 'avg') {
-                    const sources = col.sources || [];
-                    let sum = 0;
-                    let validCount = 0;
+                    result = (val !== undefined && val !== '') ? val : '';
+                } else {
+                    const nums = [];
                     let hasAnyData = false;
-
-                    sources.forEach(srcId => {
-                        const v = computed[srcId];
+                    (col.sources || []).forEach(srcId => {
+                        const v = calc(srcId);
                         if (v !== '' && v !== undefined && v !== null) {
                             hasAnyData = true;
                             const num = parseFloat(v);
-                            if (!isNaN(num)) {
-                                sum += num;
-                                validCount++;
-                            } else if (appState.absentPolicy === 'zero') {
-                                validCount++;   // (غ) و(م) تُحسب صفراً حسب إعداد المدرس
-                            }
+                            if (!isNaN(num)) nums.push(num);
+                            else if (zeroPolicy) nums.push(0);   // (غ) و(م) تُحسب صفراً حسب إعداد المدرس
                         }
                     });
-
-                    if (!hasAnyData || validCount === 0) {
-                        computed[col.id] = '';
-                    } else if (col.type === 'sum') {
-                        computed[col.id] = Math.round(sum * 10) / 10;
-                    } else if (col.type === 'avg') {
-                        computed[col.id] = Math.round(sum / validCount);
+                    if (hasAnyData && nums.length > 0) {
+                        if (col.type === 'sum') {
+                            result = Math.round(nums.reduce((a, b) => a + b, 0) * 10) / 10;
+                        } else if (col.type === 'avg') {
+                            result = Math.round(nums.reduce((a, b) => a + b, 0) / nums.length);
+                        } else if (col.type === 'top2') {
+                            const top = nums.slice().sort((a, b) => b - a).slice(0, 2);
+                            result = Math.round(top.reduce((a, b) => a + b, 0) / top.length * 10) / 10;
+                            if (top.length < 2) partial[col.id] = true;
+                        }
                     }
                 }
-            });
+                computed[id] = result;
+                state[id] = 2;
+                return result;
+            }
 
-            return computed;
+            appState.columns.forEach(c => calc(c.id));
+            const out = {};
+            appState.columns.forEach(c => { out[c.id] = computed[c.id]; });
+            Object.defineProperty(out, '__partial', { value: partial, enumerable: false });
+            return out;
         }
 
         // تحديد لون كل عمود حسب نوعه ودرجته العظمى
@@ -1553,7 +1634,7 @@
             if (col.id === 'final_avg') {
                 return { th: 'col-theme-final-th', td: 'col-theme-final-td' };
             }
-            if (col.type === 'avg') {
+            if (col.type === 'avg' || col.type === 'top2') {
                 return { th: 'col-theme-avg-th', td: 'col-theme-avg-td' };
             }
             if (col.max === 100) {
@@ -1847,7 +1928,8 @@
                                 placeholder="-">
                         </td>`;
                     } else {
-                        bodyHtml += `<td id="cell_${cdEsc(student.id)}_${cdEsc(col.id)}" class="${theme.td} ${statusClass} grade-col-cell px-1 py-2 text-center text-xs sm:text-sm">
+                        const isPartial = !!(computed.__partial && computed.__partial[col.id]);
+                        bodyHtml += `<td id="cell_${cdEsc(student.id)}_${cdEsc(col.id)}" ${isPartial ? 'title="محسوب من درجة واحدة فقط"' : ''} class="${theme.td} ${statusClass} ${isPartial ? 'partial-calc' : ''} grade-col-cell px-1 py-2 text-center text-xs sm:text-sm">
                             ${val !== '' ? cdEsc(val) : '-'}
                         </td>`;
                     }
@@ -1914,7 +1996,9 @@
                         if (v !== '' && !isNaN(parseFloat(v)) && parseFloat(v) < cPass) {
                             statusClass = 'grade-fail';
                         }
-                        cellEl.className = `${theme.td} ${statusClass} grade-col-cell px-1 py-2 text-center text-xs sm:text-sm`;
+                        const isPartial = !!(computed.__partial && computed.__partial[c.id]);
+                        if (isPartial) cellEl.title = 'محسوب من درجة واحدة فقط'; else cellEl.removeAttribute('title');
+                        cellEl.className = `${theme.td} ${statusClass} ${isPartial ? 'partial-calc' : ''} grade-col-cell px-1 py-2 text-center text-xs sm:text-sm`;
                     }
                 }
             });
@@ -2281,87 +2365,254 @@
 
         // إدارة السجل وتقسيم الدرجات
         let tempColumns = [];
+        let tempUndo = [];          // لقطات قبل كل حذف أو استعادة (للتراجع داخل النافذة)
+        let tempOpenSrc = {};       // أعمدة قائمة مصادرها مفتوحة
+        const CALC_TYPES = { sum: 'مجموع', avg: 'معدل', top2: 'أعلى شهرين ÷ 2' };
+
         function renderStructureModalContent() {
             tempColumns = JSON.parse(JSON.stringify(appState.columns));
+            tempUndo = [];
+            tempOpenSrc = {};
             drawStructureList();
+        }
+
+        // عدد الطلاب الذين لديهم درجة مسجلة في عمود إدخال (كل السنوات والشعب)
+        function countColumnGrades(colId) {
+            let n = 0;
+            try {
+                Object.values(appState.years).forEach(y => Object.values(y.classes).forEach(cl => Object.values(cl.sections).forEach(sec => sec.students.forEach(st => {
+                    const v = (st.grades || {})[colId];
+                    if (v !== undefined && v !== null && v !== '') n++;
+                }))));
+            } catch (e) {}
+            return n;
+        }
+
+        // الدرجة العظمى للعمود الحسابي تتبع الأعمدة المصدر (يمكن تعديلها يدوياً بعدها)
+        function autoMaxFor(col) {
+            const maxes = (col.sources || []).map(id => tempColumns.find(c => c.id === id)).filter(Boolean).map(c => Number(c.max) || 0);
+            if (!maxes.length) return;
+            col.max = col.type === 'sum' ? Math.round(maxes.reduce((a, b) => a + b, 0) * 10) / 10 : Math.max(...maxes);
+        }
+
+        function pushTempUndo() {
+            tempUndo.push(JSON.stringify(tempColumns));
+            if (tempUndo.length > 30) tempUndo.shift();
+        }
+        function undoTempChange() {
+            if (!tempUndo.length) return;
+            tempColumns = JSON.parse(tempUndo.pop());
+            drawStructureList();
+            showToast('تم التراجع');
         }
 
         function drawStructureList() {
             const container = document.getElementById('structureModalBody');
             let html = `<div class="bg-amber-50 border border-amber-200 rounded-2xl p-3 space-y-1.5"><label class="block text-xs font-extrabold text-amber-900">معاملة (غ) و(م) عند حساب المجاميع والمعدلات</label><select onchange="setAbsentPolicy(this.value)" class="w-full bg-white border border-amber-300 rounded-lg px-2.5 py-1.5 text-xs font-bold"><option value="skip" ${appState.absentPolicy !== 'zero' ? 'selected' : ''}>تجاهلها (لا تدخل في المعدل)</option><option value="zero" ${appState.absentPolicy === 'zero' ? 'selected' : ''}>تُحسب صفراً</option></select></div>`;
 
-            tempColumns.forEach((col, idx) => {
-                const isCalc = col.type !== 'input';
-                const badge = col.type === 'input'
-                    ? '<span class="bg-slate-200 text-slate-700 text-[10px] font-extrabold px-2 py-0.5 rounded-md">إدخال يدوي</span>'
-                    : (col.type === 'sum'
-                        ? '<span class="bg-blue-100 text-blue-800 text-[10px] font-extrabold px-2 py-0.5 rounded-md">مجموع تلقائي</span>'
-                        : '<span class="bg-purple-100 text-purple-800 text-[10px] font-extrabold px-2 py-0.5 rounded-md">معدل تلقائي</span>');
-
-                html += `
-                <div class="bg-white p-3 rounded-2xl border ${isCalc ? 'border-blue-200 bg-blue-50/20' : 'border-slate-200'} flex flex-wrap items-center justify-between gap-2">
-                    <div class="flex items-center gap-2 flex-1 min-w-[170px]">
-                        <span class="text-[11px] font-extrabold text-slate-400 w-5">${idx + 1}.</span>
-                        <div class="flex-1">
-                            <div class="flex items-center gap-1.5 mb-1">
-                                <span class="text-[11px] font-bold text-emerald-700">${cdEsc(col.group)}</span>
-                                ${badge}
-                            </div>
-                            <input type="text" value="${cdEsc(col.label)}" onchange="tempColumns[${idx}].label = this.value" class="w-full bg-slate-50 border border-slate-300 rounded-lg px-2.5 py-1 text-xs font-bold">
-                        </div>
-                    </div>
-                    <div class="flex items-center gap-2">
-                        <div>
-                            <label class="block text-[10px] text-slate-500 font-bold text-center">الدرجة</label>
-                            <input type="number" value="${col.max}" onchange="tempColumns[${idx}].max = (parseFloat(this.value) > 0 ? parseFloat(this.value) : tempColumns[${idx}].max)" class="w-16 text-center bg-slate-50 border border-slate-300 rounded-lg py-1 text-xs font-extrabold">
-                        </div>
-                        ${col.type === 'input' ? `<button onclick="removeTempColumn(${idx})" class="mt-3 text-rose-500 hover:bg-rose-50 p-2 rounded-lg"><i class="fa-solid fa-trash-can"></i></button>` : '<div class="w-8"></div>'}
-                    </div>
+            if (tempUndo.length) {
+                html += `<div class="bg-rose-50 border border-rose-200 rounded-2xl p-2.5 flex items-center justify-between gap-2">
+                    <span class="text-xs font-bold text-rose-800">تغييرات غير محفوظة (${tempUndo.length}) — لن تُطبَّق حتى تضغط حفظ</span>
+                    <button onclick="undoTempChange()" class="bg-white hover:bg-rose-100 text-rose-700 border border-rose-300 font-extrabold text-xs px-3 py-1.5 rounded-lg"><i class="fa-solid fa-rotate-left ml-1"></i>تراجع</button>
                 </div>`;
+            }
+
+            // تقسيم الأعمدة المتجاورة ذات المجموعة نفسها
+            const runs = [];
+            tempColumns.forEach((col, idx) => {
+                const last = runs[runs.length - 1];
+                if (last && last.name === col.group) last.end = idx; else runs.push({ name: col.group, start: idx, end: idx });
             });
 
+            runs.forEach(run => {
+                html += `<div class="pt-1">
+                    <div class="flex items-center gap-2 bg-emerald-50 border border-emerald-200 rounded-xl px-2.5 py-1.5">
+                        <i class="fa-solid fa-layer-group text-emerald-700 text-xs"></i>
+                        <span class="text-[10px] font-extrabold text-emerald-800 whitespace-nowrap">اسم المجموعة</span>
+                        <input type="text" value="${cdEsc(run.name)}" onchange="renameGroup(${run.start}, ${run.end}, this.value)" class="flex-1 min-w-0 bg-white border border-emerald-300 rounded-lg px-2.5 py-1 text-xs font-extrabold text-emerald-900">
+                    </div></div>`;
+
+                for (let idx = run.start; idx <= run.end; idx++) {
+                    const col = tempColumns[idx];
+                    const isCalc = col.type !== 'input';
+                    const badge = col.type === 'input'
+                        ? '<span class="bg-slate-200 text-slate-700 text-[10px] font-extrabold px-2 py-0.5 rounded-md">إدخال يدوي</span>'
+                        : `<select onchange="changeColumnType(${idx}, this.value)" class="bg-purple-100 text-purple-800 text-[10px] font-extrabold px-1.5 py-0.5 rounded-md border border-purple-200">${Object.keys(CALC_TYPES).map(t => `<option value="${t}" ${col.type === t ? 'selected' : ''}>${CALC_TYPES[t]}</option>`).join('')}</select>`;
+                    const srcCount = (col.sources || []).length;
+                    const open = isCalc && tempOpenSrc[col.id];
+
+                    html += `
+                    <div class="bg-white p-3 rounded-2xl border ${isCalc ? 'border-blue-200 bg-blue-50/20' : 'border-slate-200'} space-y-2">
+                        <div class="flex flex-wrap items-center justify-between gap-2">
+                            <div class="flex items-center gap-2 flex-1 min-w-[170px]">
+                                <span class="text-[11px] font-extrabold text-slate-400 w-5">${idx + 1}.</span>
+                                <div class="flex-1">
+                                    <div class="flex items-center gap-1.5 mb-1">${badge}</div>
+                                    <input type="text" value="${cdEsc(col.label)}" onchange="tempColumns[${idx}].label = this.value" class="w-full bg-slate-50 border border-slate-300 rounded-lg px-2.5 py-1 text-xs font-bold">
+                                </div>
+                            </div>
+                            <div class="flex items-center gap-2">
+                                <div>
+                                    <label class="block text-[10px] text-slate-500 font-bold text-center">الدرجة</label>
+                                    <input type="number" value="${col.max}" onchange="tempColumns[${idx}].max = (parseFloat(this.value) > 0 ? parseFloat(this.value) : tempColumns[${idx}].max)" class="w-16 text-center bg-slate-50 border border-slate-300 rounded-lg py-1 text-xs font-extrabold">
+                                </div>
+                                <button onclick="requestRemoveColumn(${idx})" title="حذف العمود" class="mt-3 text-rose-500 hover:bg-rose-50 p-2 rounded-lg"><i class="fa-solid fa-trash-can"></i></button>
+                            </div>
+                        </div>
+                        ${isCalc ? `<button onclick="toggleSrcPanel(${idx})" class="w-full text-right text-[11px] font-extrabold text-blue-800 bg-blue-50 hover:bg-blue-100 border border-blue-200 rounded-lg px-2.5 py-1.5"><i class="fa-solid ${open ? 'fa-chevron-up' : 'fa-chevron-down'} ml-1"></i>الأعمدة المحسوبة (${srcCount})</button>` : ''}
+                        ${isCalc && col.type === 'top2' && srcCount < 2 ? '<p class="text-[10px] font-bold text-amber-700">تنبيه: اختر عمودين على الأقل، وإلا يُحسب من المتوفر فقط.</p>' : ''}
+                        ${open ? drawSourcesPanel(idx) : ''}
+                    </div>`;
+                }
+            });
+
+            const calcOptions = tempColumns.map((c, i) => c.type !== 'input' ? `<option value="${i}">${cdEsc(c.group)} — ${cdEsc(c.label)} (${CALC_TYPES[c.type]})</option>` : '').join('');
             html += `
             <div class="bg-white p-3.5 rounded-2xl border-2 border-dashed border-emerald-300 space-y-2">
-                <h5 class="text-xs font-extrabold text-emerald-800">+ إضافة عمود درجة جديد:</h5>
+                <h5 class="text-xs font-extrabold text-emerald-800">+ إضافة عمود جديد:</h5>
                 <div class="grid grid-cols-1 sm:grid-cols-3 gap-2">
                     <input type="text" id="newColGroup" placeholder="المجموعة (الشهر الأول)" class="bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-xs font-bold">
                     <input type="text" id="newColLabel" placeholder="اسم الحقل (نشاط)" class="bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-xs font-bold">
-                    <div class="flex gap-2">
-                        <input type="number" id="newColMax" placeholder="10" class="w-20 bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-xs font-bold">
-                        <button onclick="addTempColumn()" class="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl">إضافة</button>
-                    </div>
+                    <input type="number" id="newColMax" placeholder="الدرجة (10)" class="bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-xs font-bold">
                 </div>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                    <select id="newColType" class="bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-xs font-bold">
+                        <option value="input">نوع العمود: إدخال يدوي</option>
+                        <option value="sum">نوع العمود: مجموع</option>
+                        <option value="avg">نوع العمود: معدل</option>
+                        <option value="top2">نوع العمود: أعلى شهرين ÷ 2</option>
+                    </select>
+                    <select id="newColTarget" class="bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-xs font-bold">
+                        <option value="">لا تضفه إلى أي مجموع</option>
+                        ${calcOptions}
+                    </select>
+                </div>
+                <button onclick="addTempColumn()" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl py-2">إضافة العمود</button>
+                <p class="text-[10px] font-bold text-slate-500">إذا اخترت مجموعاً، يوضع العمود الجديد قبله مباشرة ويدخل في حسابه.</p>
             </div>`;
 
             container.innerHTML = html;
         }
 
-        function addTempColumn() {
-            const grp = document.getElementById('newColGroup').value.trim() || 'إضافي';
-            const lbl = document.getElementById('newColLabel').value.trim();
-            const max = parseFloat(document.getElementById('newColMax').value) || 10;
-            if (!lbl) { showToast('يرجى إدخال اسم الحقل', 'error'); return; }
-            tempColumns.push({ id: 'col_' + Date.now(), group: grp, label: lbl, max: max, type: 'input' });
+        function drawSourcesPanel(idx) {
+            const col = tempColumns[idx];
+            const items = tempColumns.map((c, i) => {
+                if (i === idx) return '';
+                const checked = (col.sources || []).includes(c.id);
+                return `<label class="flex items-center gap-2 py-1 px-1.5 rounded-lg hover:bg-white cursor-pointer text-[11px] font-bold text-slate-700">
+                    <input type="checkbox" ${checked ? 'checked' : ''} onchange="toggleSource(${idx}, ${i}, this.checked)" class="w-4 h-4 accent-blue-600">
+                    <span class="text-emerald-700">${cdEsc(c.group)}</span><span>—</span><span>${cdEsc(c.label)}</span>
+                    <span class="text-slate-400 mr-auto">(${c.max})</span>
+                </label>`;
+            }).join('');
+            return `<div class="bg-slate-50 border border-slate-200 rounded-xl p-1.5 max-h-48 overflow-y-auto">${items}</div>`;
+        }
+
+        function toggleSrcPanel(idx) {
+            const id = tempColumns[idx].id;
+            tempOpenSrc[id] = !tempOpenSrc[id];
             drawStructureList();
         }
 
-        function removeTempColumn(idx) { tempColumns.splice(idx, 1); drawStructureList(); }
+        function toggleSource(idx, srcIdx, checked) {
+            const col = tempColumns[idx];
+            const srcId = tempColumns[srcIdx].id;
+            const list = (col.sources || []).filter(id => id !== srcId);
+            if (checked) list.push(srcId);
+            // نبقي الترتيب مطابقاً لترتيب الأعمدة في الجدول
+            col.sources = tempColumns.map(c => c.id).filter(id => list.includes(id));
+            autoMaxFor(col);
+            drawStructureList();
+        }
+
+        function changeColumnType(idx, type) {
+            if (!CALC_TYPES[type]) return;
+            tempColumns[idx].type = type;
+            autoMaxFor(tempColumns[idx]);
+            drawStructureList();
+        }
+
+        function renameGroup(start, end, value) {
+            const name = String(value || '').trim();
+            if (!name) { showToast('اسم المجموعة لا يمكن أن يكون فارغاً', 'error'); drawStructureList(); return; }
+            for (let i = start; i <= end; i++) tempColumns[i].group = name;
+            drawStructureList();
+        }
+
+        function addTempColumn() {
+            const grpInput = document.getElementById('newColGroup').value.trim();
+            const lbl = document.getElementById('newColLabel').value.trim();
+            const max = parseFloat(document.getElementById('newColMax').value) || 10;
+            const type = document.getElementById('newColType').value;
+            const targetVal = document.getElementById('newColTarget').value;
+            if (!lbl) { showToast('يرجى إدخال اسم الحقل', 'error'); return; }
+            const target = targetVal !== '' ? tempColumns[parseInt(targetVal)] : null;
+            const col = { id: 'col_' + Date.now() + '_' + Math.floor(Math.random() * 1000), group: grpInput || (target ? target.group : 'إضافي'), label: lbl, max: max, type: CALC_TYPES[type] || type === 'input' ? type : 'input' };
+            if (col.type !== 'input') col.sources = [];
+            const insertAt = target ? tempColumns.indexOf(target) : tempColumns.length;
+            tempColumns.splice(insertAt, 0, col);
+            if (target) {
+                target.sources = (target.sources || []).concat(col.id);
+                target.sources = tempColumns.map(c => c.id).filter(id => target.sources.includes(id));
+                autoMaxFor(target);
+            }
+            if (col.type !== 'input') tempOpenSrc[col.id] = true;
+            drawStructureList();
+            showToast(target ? 'تمت الإضافة وإدخالها في «' + target.label + '»' : 'تمت إضافة العمود');
+        }
+
+        // حذف عمود (أي نوع) بعد تأكيد يوضح الأثر
+        function requestRemoveColumn(idx) {
+            const col = tempColumns[idx];
+            if (!col) return;
+            const dependents = tempColumns.filter((c, i) => i !== idx && (c.sources || []).includes(col.id)).map(c => '«' + c.label + '»');
+            let msg = 'هل تريد حذف عمود «' + col.label + '» من مجموعة «' + col.group + '»؟';
+            if (col.type === 'input') {
+                const n = countColumnGrades(col.id);
+                msg += n > 0 ? ' ستختفي من الجدول درجات ' + n + ' طالب مسجلة في هذا العمود (في كل السنوات والشعب).' : ' لا توجد درجات مسجلة فيه.';
+            } else {
+                msg += ' هذا عمود حسابي (' + CALC_TYPES[col.type] + ')، ولا تُحذف منه درجات مدخلة، لكن نتيجته ستختفي من الجدول.';
+            }
+            if (dependents.length) msg += ' وهو داخل في حساب: ' + dependents.join('، ') + ' وسيُزال منه تلقائياً.';
+            msg += ' يمكنك التراجع قبل الحفظ، وتُحفظ نسخة أمان قبل تطبيق الهيكل.';
+            showConfirm('تأكيد حذف عمود', msg, () => removeTempColumn(idx));
+        }
+
+        function removeTempColumn(idx) {
+            const col = tempColumns[idx];
+            if (!col) return;
+            pushTempUndo();
+            tempColumns.splice(idx, 1);
+            tempColumns.forEach(c => {
+                if (c.sources && c.sources.includes(col.id)) { c.sources = c.sources.filter(id => id !== col.id); autoMaxFor(c); }
+            });
+            delete tempOpenSrc[col.id];
+            drawStructureList();
+        }
+
         function applyStructureChanges() {
+            if (!tempColumns.length) { showToast('يجب أن يبقى عمود واحد على الأقل', 'error'); return; }
             if (tempColumns.some(c => !String(c.label || '').trim())) { showToast('يوجد عمود بدون اسم', 'error'); return; }
-            tempColumns.forEach(c => { if (c.sources) c.sources = c.sources.filter(id => tempColumns.some(x => x.id === id)); });
+            tempColumns.forEach(c => { if (c.sources) c.sources = c.sources.filter(id => id !== c.id && tempColumns.some(x => x.id === id)); });
+            if (JSON.stringify(tempColumns) === JSON.stringify(appState.columns)) { closeModal('structureModal'); return; }
             const maxOf = {}; tempColumns.forEach(c => { if (c.type === 'input') maxOf[c.id] = c.max; });
             let over = 0;
             Object.values(appState.years).forEach(y => Object.values(y.classes).forEach(cl => Object.values(cl.sections).forEach(sec => sec.students.forEach(st => {
                 Object.entries(st.grades || {}).forEach(([k, v]) => { if (typeof v === 'number' && maxOf[k] !== undefined && v > maxOf[k]) over++; });
             }))));
-            const go = () => { appState.columns = tempColumns; renderGradesTable(); window.appState = appState; saveAllData(true); closeModal('structureModal'); };
+            const go = () => {
+                safetySnapshot('before-structure');   // نسخة أمان تلقائية قبل أي تعديل على الهيكل
+                appState.columns = tempColumns;
+                renderGradesTable(); window.appState = appState; saveAllData(true); closeModal('structureModal');
+                showToast('تم تطبيق الهيكل — وحُفظت نسخة أمان قبل التعديل');
+            };
             if (over > 0) showConfirm('درجات تتجاوز الحد', `يوجد ${over} درجة محفوظة أكبر من الدرجة العظمى الجديدة. ستبقى كما هي وقد تظهر مجاميع أكبر من حدها. هل تتابع؟`, go); else go();
         }
-        function resetDefaultStructure() { tempColumns = getDefaultColumns(); drawStructureList(); showToast('تمت استعادة التقسيم الافتراضي'); }
+        function resetDefaultStructure() { pushTempUndo(); tempColumns = getDefaultColumns(); tempOpenSrc = {}; drawStructureList(); showToast('تمت استعادة التقسيم الافتراضي'); }
 
         // النسخ الاحتياطي JSON
         async function buildBackupText() {
-            appState.schemaVersion = SCHEMA_VERSION; appState.appVersion = '2.7.5';
+            appState.schemaVersion = SCHEMA_VERSION; appState.appVersion = '2.9.0';
             const text = JSON.stringify(appState, null, 2);
             const pass = prompt('اختياري: اكتب كلمة سر لتشفير النسخة (فيها بيانات طلاب).\nاتركها فارغة لنسخة غير مشفرة.\nتحذير: إن نسيت الكلمة لا يمكن استرجاع النسخة.');
             if (pass === null) return null;
@@ -2374,7 +2625,7 @@
             window.appState = appState; saveAllData(false); checkBackupReminder();
             showToast('سُجّلت النسخة الاحتياطية');
         }
-        function triggerDownload(b) {
+        function triggerDownload(b, onOk) {
             const blob = new Blob([b.text], { type: 'application/json' });
             const url = URL.createObjectURL(blob);
             const a = document.createElement('a');
@@ -2382,7 +2633,7 @@
             a.download = `سجل_المدرس_الالكتروني_${new Date().toISOString().slice(0, 10)}${b.enc ? '_مشفرة' : ''}.json`;
             document.body.appendChild(a); a.click(); document.body.removeChild(a);
             setTimeout(() => URL.revokeObjectURL(url), 4000);
-            showConfirm('تأكيد حفظ النسخة', 'هل ظهر الملف فعلاً في التنزيلات/الملفات على جهازك؟ اضغط «تأكيد» فقط إذا تأكدت من وجوده.', markBackupDone);
+            showConfirm('تأكيد حفظ النسخة', 'هل ظهر الملف فعلاً في التنزيلات/الملفات على جهازك؟ اضغط «تأكيد» فقط إذا تأكدت من وجوده.', () => { markBackupDone(); if (typeof onOk === 'function') onOk(); });
         }
         async function downloadBackupJSON() {
             const b = await buildBackupText(); if (!b) return;
@@ -2407,7 +2658,7 @@
             if (!p.meta || typeof p.meta !== 'object') return 'بيانات المدرس مفقودة';
             ['schoolName', 'subjectName', 'teacherName'].forEach(k => { if (typeof p.meta[k] !== 'string') p.meta[k] = ''; });
             if (!Array.isArray(p.columns) || !p.columns.length) return 'تقسيم الدرجات (الأعمدة) مفقود';
-            for (const c of p.columns) if (!c || typeof c.id !== 'string' || !['input', 'sum', 'avg'].includes(c.type) || typeof c.max !== 'number') return 'تقسيم الدرجات تالف';
+            for (const c of p.columns) if (!c || typeof c.id !== 'string' || !['input', 'sum', 'avg', 'top2'].includes(c.type) || typeof c.max !== 'number') return 'تقسيم الدرجات تالف';
             if (!p.years || typeof p.years !== 'object' || !Object.keys(p.years).length) return 'لا توجد سنوات دراسية في الملف';
             for (const y of Object.values(p.years)) {
                 if (!y || typeof y.classes !== 'object') return 'بنية السنوات تالفة';
@@ -2922,6 +3173,138 @@
             if (fn) fn(b.dataset.v);
         });
 
+
+        // ===================== تصفية نهاية السنة (2.8.0) =====================
+        const YW_WARN_BYTES = 800000, YW_LIMIT_BYTES = 1000000;
+        let ywBackedUp = false, ywUndoSnapshot = null;
+        const ywBytes = str => new TextEncoder().encode(str).length;
+        function ywCheckSize(raw) {
+            const n = ywBytes(raw);
+            if (n < YW_WARN_BYTES) return;
+            const today = new Date().toISOString().slice(0, 10);
+            if (localStorage.getItem('teacher_register_size_warn') === today) return;
+            localStorage.setItem('teacher_register_size_warn', today);
+            showToast('حجم بياناتك ' + Math.round(n / 1000) + 'KB واقترب من حد السحابة (1000KB). نفّذ «تصفية نهاية السنة» من الإعدادات.', 'error');
+        }
+        function ywEachSection(fn) {
+            const y = appState.years[appState.selectedYear];
+            if (!y) return;
+            Object.values(y.classes || {}).forEach(c => Object.values(c.sections || {}).forEach(fn));
+        }
+        function ywCounts() {
+            const c = { students: 0, grades: 0, abs: 0, mis: 0, notes: 0 };
+            ywEachSection(sec => {
+                (sec.students || []).forEach(st => {
+                    c.students++;
+                    Object.values(st.grades || {}).forEach(v => { if (v !== '' && v !== undefined && v !== null) c.grades++; });
+                });
+                Object.values(sec.conduct || {}).forEach(r => { c.abs += (r.abs || []).length; c.mis += (r.mis || []).length; });
+                c.notes += (sec.notes || []).length;
+            });
+            return c;
+        }
+        function ywDelStudents() { const r = document.querySelector('input[name="ywStudents"]:checked'); return !!r && r.value === 'delete'; }
+        function openYearWipe() {
+            closeModal('settingsModal');
+            ywBackedUp = false;
+            document.getElementById('ywGrades').checked = true;
+            document.getElementById('ywConduct').checked = true;
+            document.getElementById('ywNotes').checked = true;
+            document.querySelector('input[name="ywStudents"][value="keep"]').checked = true;
+            document.getElementById('ywNewName').value = '';
+            document.getElementById('ywConfirmInput').value = '';
+            ywShowForm(true);
+            ywRender();
+            openModal('yearWipeModal');
+        }
+        function ywShowForm(show) {
+            document.getElementById('ywBody').classList.toggle('hidden', !show);
+            document.getElementById('ywFooter').classList.toggle('hidden', !show);
+            const d = document.getElementById('ywDone'); if (d) d.remove();
+        }
+        function ywRender() {
+            const c = ywCounts();
+            document.getElementById('ywYearName').textContent = appState.selectedYear || '';
+            document.getElementById('ywCntGrades').textContent = c.grades + ' درجة';
+            document.getElementById('ywCntConduct').textContent = (c.abs + c.mis) + ' سجل';
+            document.getElementById('ywCntNotes').textContent = c.notes + ' ملاحظة';
+            document.getElementById('ywCntStudents').textContent = c.students + ' طالب';
+            const bytes = ywBytes(JSON.stringify(appState));
+            const pct = Math.min(100, Math.round(bytes / YW_LIMIT_BYTES * 100));
+            document.getElementById('ywSizeText').textContent = Math.round(bytes / 1000) + 'KB من 1000KB';
+            const bar = document.getElementById('ywSizeBar');
+            bar.style.width = Math.max(pct, 2) + '%';
+            bar.className = 'h-full rounded-full ' + (bytes >= YW_WARN_BYTES ? 'bg-rose-500' : (bytes >= YW_WARN_BYTES * 0.6 ? 'bg-amber-500' : 'bg-emerald-500'));
+            const del = ywDelStudents();
+            ['ywGrades', 'ywConduct', 'ywNotes'].forEach(id => { const el = document.getElementById(id); el.disabled = del; if (del) el.checked = true; });
+            const st = document.getElementById('ywBackupState');
+            if (ywBackedUp) { st.textContent = 'تم تنزيل النسخة وتأكيدها ✓'; st.className = 'text-[11px] font-bold text-emerald-700 mt-1.5 text-center'; document.getElementById('ywBackupLabel').textContent = 'تنزيل نسخة أخرى'; }
+            else { st.textContent = 'لم تُنزَّل نسخة بعد، والتنفيذ مقفل حتى تنزيلها وتأكيدها.'; st.className = 'text-[11px] font-bold text-rose-600 mt-1.5 text-center'; document.getElementById('ywBackupLabel').textContent = 'تنزيل النسخة الاحتياطية'; }
+            const nothing = !del && !document.getElementById('ywGrades').checked && !document.getElementById('ywConduct').checked && !document.getElementById('ywNotes').checked;
+            const ok = ywBackedUp && !nothing && document.getElementById('ywConfirmInput').value.trim() === 'تصفية';
+            document.getElementById('ywRunBtn').disabled = !ok;
+        }
+        async function ywBackup() {
+            const b = await buildBackupText(); if (!b) return;
+            triggerDownload(b, () => { ywBackedUp = true; ywRender(); });
+        }
+        function ywApplyState(next, msg) {
+            window.appState = appState = next;
+            populateSelectors(); renderGradesTable();
+            window.appState = appState; saveAllData(false);
+            try { if (typeof window.pushToCloud === 'function') window.pushToCloud(true, true); } catch (e) {}
+            if (msg) showToast(msg);
+        }
+        async function ywRun() {
+            if (!ywBackedUp) { showToast('نزّل النسخة الاحتياطية وأكّدها أولاً', 'error'); return; }
+            if (document.getElementById('ywConfirmInput').value.trim() !== 'تصفية') { showToast('اكتب كلمة «تصفية» للتأكيد', 'error'); return; }
+            if (localStorage.getItem(PIN_KEY)) {
+                const p = prompt('أدخل رمز قفل التطبيق لتأكيد التصفية');
+                if (p === null || !(await pinCheck(p))) { showToast('الرمز غير صحيح', 'error'); return; }
+            }
+            const delStudents = ywDelStudents();
+            const dg = document.getElementById('ywGrades').checked, dc = document.getElementById('ywConduct').checked, dn = document.getElementById('ywNotes').checked;
+            if (!delStudents && !dg && !dc && !dn) { showToast('اختر ما تريد حذفه', 'error'); return; }
+            const before = ywCounts();
+            await safetySnapshot('before-year-wipe');
+            ywUndoSnapshot = JSON.stringify(appState);
+            ywEachSection(sec => {
+                if (delStudents) { sec.students = []; sec.conduct = {}; sec.notes = []; return; }
+                if (dg) (sec.students || []).forEach(st => { st.grades = {}; });
+                if (dc) sec.conduct = {};
+                if (dn) sec.notes = [];
+            });
+            const newName = document.getElementById('ywNewName').value.trim();
+            const oldName = appState.selectedYear;
+            let renamed = '';
+            if (newName && newName !== oldName) {
+                if (appState.years[newName]) { showToast('اسم السنة الجديدة موجود مسبقاً، بقي الاسم القديم', 'error'); }
+                else { appState.years[newName] = appState.years[oldName]; delete appState.years[oldName]; appState.selectedYear = newName; renamed = newName; }
+            }
+            ywApplyState(appState, '');
+            ywShowDone(before, delStudents, dg, dc, dn, renamed);
+        }
+        function ywShowDone(b, delStudents, dg, dc, dn, renamed) {
+            ywShowForm(false);
+            const lines = [];
+            if (delStudents) lines.push('حُذف ' + b.students + ' طالب مع درجاتهم وغياباتهم وملاحظاتهم');
+            else { if (dg) lines.push('حُذفت ' + b.grades + ' درجة'); if (dc) lines.push('حُذف ' + (b.abs + b.mis) + ' سجل غياب ومشاغبة'); if (dn) lines.push('حُذفت ' + b.notes + ' ملاحظة'); lines.push('بقي ' + b.students + ' طالب في شعبهم'); }
+            if (renamed) lines.push('السنة الجديدة: ' + renamed);
+            const box = document.createElement('div');
+            box.id = 'ywDone'; box.className = 'p-5 space-y-4 text-right';
+            const ic = document.createElement('div'); ic.className = 'text-center text-4xl text-emerald-600'; ic.innerHTML = '<i class="fa-solid fa-circle-check"></i>';
+            const h = document.createElement('p'); h.className = 'text-center font-extrabold text-slate-900 text-base'; h.textContent = 'تمت التصفية، سنة جديدة موفقة';
+            const ul = document.createElement('div'); ul.className = 'bg-slate-50 border border-slate-200 rounded-2xl p-3 space-y-1';
+            lines.forEach(t => { const p = document.createElement('p'); p.className = 'text-xs font-bold text-slate-700'; p.textContent = '• ' + t; ul.appendChild(p); });
+            const hint = document.createElement('p'); hint.className = 'text-[11px] text-slate-500 font-semibold leading-relaxed'; hint.textContent = 'للتراجع في هذه الجلسة اضغط الزر أدناه. وبعد إغلاق التطبيق تبقى النسخة التي نزّلتها، ونسخ الأمان في «النسخ والأمان».';
+            const undo = document.createElement('button'); undo.type = 'button'; undo.className = 'w-full bg-amber-100 hover:bg-amber-200 text-amber-900 font-extrabold text-sm py-2.5 rounded-xl'; undo.textContent = 'تراجع عن التصفية';
+            undo.onclick = () => { if (!ywUndoSnapshot) return; ywApplyState(JSON.parse(ywUndoSnapshot), 'تم التراجع عن التصفية'); ywUndoSnapshot = null; closeModal('yearWipeModal'); };
+            const ok = document.createElement('button'); ok.type = 'button'; ok.className = 'w-full bg-slate-800 hover:bg-slate-900 text-white font-bold text-sm py-2.5 rounded-xl'; ok.textContent = 'إغلاق';
+            ok.onclick = () => closeModal('yearWipeModal');
+            box.append(ic, h, ul, hint, undo, ok);
+            document.querySelector('#yearWipeModal > div').appendChild(box);
+        }
+
         function showConfirm(title, message, onConfirmCallback) {
             document.getElementById('confirmTitle').textContent = title;
             document.getElementById('confirmMessage').textContent = message;
@@ -3084,7 +3467,7 @@
                 }
                 const json = JSON.stringify(window.appState);
                 if (new TextEncoder().encode(json).length > 1000000) {
-                    setSyncText('حجم البيانات تجاوز حد السحابة (1MB): لم تُرفع. احفظ نسخة احتياطية وأرشف السنوات القديمة', true);
+                    setSyncText('حجم البيانات تجاوز حد السحابة (1MB): لم تُرفع. احفظ نسخة احتياطية ثم نفّذ «تصفية نهاية السنة» من الإعدادات', true);
                     if (manual) showToast('حجم البيانات أكبر من حد السحابة', 'error');
                     return;
                 }
