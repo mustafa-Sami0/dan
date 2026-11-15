@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>سجل المدرس الإلكتروني - إصدار 2.9.0</title>
+    <title>سجل المدرس الإلكتروني - إصدار 2.9.1</title>
     <!-- ===== إعدادات التطبيق (PWA) ===== -->
     <meta name="theme-color" content="#1e3a8a">
     <meta name="mobile-web-app-capable" content="yes">
@@ -309,6 +309,10 @@
         /* ===== قوائم الاختيار الخاصة بالتطبيق (2.5.2) ===== */
         .cs-btn{display:block;text-align:right;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;cursor:pointer;color:#1e293b;-webkit-appearance:none;appearance:none}
         .cs-btn:disabled{opacity:.5}
+        .cs-btn.cs-arrow{position:relative;padding-left:1.7rem !important}
+        .cs-btn.cs-arrow::after{content:"\f078";font-family:"Font Awesome 6 Free";font-weight:900;font-size:9px;position:absolute;left:10px;top:50%;transform:translateY(-50%);opacity:.55}
+        .cs-btn.cs-arrow:hover{filter:brightness(.97)}
+        .cs-btn:focus-visible{outline:2px solid #2563eb;outline-offset:1px}
         .cs-ov{position:fixed;inset:0;z-index:80;background:rgba(15,23,42,.6);backdrop-filter:blur(4px);display:flex;align-items:center;justify-content:center;padding:16px}
         .cs-card{background:#fff;border-radius:24px;width:100%;max-width:360px;box-shadow:0 20px 50px rgba(0,0,0,.35);overflow:hidden;font-family:'Cairo',sans-serif}
         .cs-hd{background:linear-gradient(270deg,#1e3a8a,#3730a3);color:#fff;padding:12px 16px;display:flex;align-items:center;justify-content:space-between;font-size:14px}
@@ -1016,7 +1020,7 @@
                 </button>
                 <div class="mt-3 pt-3 border-t border-slate-200 text-center space-y-0.5">
                     <p class="text-[12px] font-extrabold text-slate-700">سجل المدرس الإلكتروني</p>
-                    <p class="text-[11px] font-bold text-slate-500">الإصدار 2.9.0</p>
+                    <p class="text-[11px] font-bold text-slate-500">الإصدار 2.9.1</p>
                     <p class="text-[11px] font-semibold text-slate-500">جميع الحقوق محفوظة © 2026</p>
                     <p class="text-[11px] font-semibold text-slate-500">المطوّر: <span class="font-extrabold text-blue-800">مصطفى سامي</span></p>
                 </div>
@@ -2408,7 +2412,7 @@
 
         function drawStructureList() {
             const container = document.getElementById('structureModalBody');
-            let html = `<div class="bg-amber-50 border border-amber-200 rounded-2xl p-3 space-y-1.5"><label class="block text-xs font-extrabold text-amber-900">معاملة (غ) و(م) عند حساب المجاميع والمعدلات</label><select onchange="setAbsentPolicy(this.value)" class="w-full bg-white border border-amber-300 rounded-lg px-2.5 py-1.5 text-xs font-bold"><option value="skip" ${appState.absentPolicy !== 'zero' ? 'selected' : ''}>تجاهلها (لا تدخل في المعدل)</option><option value="zero" ${appState.absentPolicy === 'zero' ? 'selected' : ''}>تُحسب صفراً</option></select></div>`;
+            let html = `<div class="bg-amber-50 border border-amber-200 rounded-2xl p-3 space-y-1.5"><label class="block text-xs font-extrabold text-amber-900">معاملة (غ) و(م) عند حساب المجاميع والمعدلات</label><select data-cs-title="معاملة (غ) و(م)" onchange="setAbsentPolicy(this.value)" class="w-full bg-white border border-amber-300 rounded-lg px-2.5 py-1.5 text-xs font-bold"><option value="skip" ${appState.absentPolicy !== 'zero' ? 'selected' : ''}>تجاهلها (لا تدخل في المعدل)</option><option value="zero" ${appState.absentPolicy === 'zero' ? 'selected' : ''}>تُحسب صفراً</option></select></div>`;
 
             if (tempUndo.length) {
                 html += `<div class="bg-rose-50 border border-rose-200 rounded-2xl p-2.5 flex items-center justify-between gap-2">
@@ -2437,7 +2441,7 @@
                     const isCalc = col.type !== 'input';
                     const badge = col.type === 'input'
                         ? '<span class="bg-slate-200 text-slate-700 text-[10px] font-extrabold px-2 py-0.5 rounded-md">إدخال يدوي</span>'
-                        : `<select onchange="changeColumnType(${idx}, this.value)" class="bg-purple-100 text-purple-800 text-[10px] font-extrabold px-1.5 py-0.5 rounded-md border border-purple-200">${Object.keys(CALC_TYPES).map(t => `<option value="${t}" ${col.type === t ? 'selected' : ''}>${CALC_TYPES[t]}</option>`).join('')}</select>`;
+                        : `<select data-cs-title="نوع الحساب" onchange="changeColumnType(${idx}, this.value)" class="bg-purple-100 text-purple-800 text-[10px] font-extrabold px-1.5 py-0.5 rounded-md border border-purple-200">${Object.keys(CALC_TYPES).map(t => `<option value="${t}" ${col.type === t ? 'selected' : ''}>${CALC_TYPES[t]}</option>`).join('')}</select>`;
                     const srcCount = (col.sources || []).length;
                     const open = isCalc && tempOpenSrc[col.id];
 
@@ -2455,6 +2459,10 @@
                                 <div>
                                     <label class="block text-[10px] text-slate-500 font-bold text-center">الدرجة</label>
                                     <input type="number" value="${col.max}" onchange="tempColumns[${idx}].max = (parseFloat(this.value) > 0 ? parseFloat(this.value) : tempColumns[${idx}].max)" class="w-16 text-center bg-slate-50 border border-slate-300 rounded-lg py-1 text-xs font-extrabold">
+                                </div>
+                                <div class="flex flex-col mt-2.5">
+                                    <button onclick="moveColumn(${idx}, -1)" title="تحريك للأعلى (للأمام في الجدول)" ${idx === run.start ? 'disabled' : ''} class="text-slate-500 hover:bg-slate-100 disabled:opacity-25 disabled:hover:bg-transparent px-1.5 py-0.5 rounded-md leading-none"><i class="fa-solid fa-chevron-up text-[11px]"></i></button>
+                                    <button onclick="moveColumn(${idx}, 1)" title="تحريك للأسفل (للخلف في الجدول)" ${idx === run.end ? 'disabled' : ''} class="text-slate-500 hover:bg-slate-100 disabled:opacity-25 disabled:hover:bg-transparent px-1.5 py-0.5 rounded-md leading-none"><i class="fa-solid fa-chevron-down text-[11px]"></i></button>
                                 </div>
                                 <button onclick="requestRemoveColumn(${idx})" title="حذف العمود" class="mt-3 text-rose-500 hover:bg-rose-50 p-2 rounded-lg"><i class="fa-solid fa-trash-can"></i></button>
                             </div>
@@ -2476,13 +2484,13 @@
                     <input type="number" id="newColMax" placeholder="الدرجة (10)" class="bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-xs font-bold">
                 </div>
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                    <select id="newColType" class="bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-xs font-bold">
+                    <select id="newColType" data-cs-title="نوع العمود الجديد" class="bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-xs font-bold">
                         <option value="input">نوع العمود: إدخال يدوي</option>
                         <option value="sum">نوع العمود: مجموع</option>
                         <option value="avg">نوع العمود: معدل</option>
                         <option value="top2">نوع العمود: أعلى شهرين ÷ 2</option>
                     </select>
-                    <select id="newColTarget" class="bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-xs font-bold">
+                    <select id="newColTarget" data-cs-title="إضافة إلى مجموع" class="bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-xs font-bold">
                         <option value="">لا تضفه إلى أي مجموع</option>
                         ${calcOptions}
                     </select>
@@ -2506,6 +2514,15 @@
                 </label>`;
             }).join('');
             return `<div class="bg-slate-50 border border-slate-200 rounded-xl p-1.5 max-h-48 overflow-y-auto">${items}</div>`;
+        }
+
+        // تحريك عمود داخل مجموعته فقط (لا يعبر الحدود إلى مجموعة أخرى)
+        function moveColumn(idx, dir) {
+            const j = idx + dir;
+            if (!tempColumns[idx] || !tempColumns[j] || tempColumns[j].group !== tempColumns[idx].group) return;
+            pushTempUndo();
+            const t = tempColumns[idx]; tempColumns[idx] = tempColumns[j]; tempColumns[j] = t;
+            drawStructureList();
         }
 
         function toggleSrcPanel(idx) {
@@ -2612,7 +2629,7 @@
 
         // النسخ الاحتياطي JSON
         async function buildBackupText() {
-            appState.schemaVersion = SCHEMA_VERSION; appState.appVersion = '2.9.0';
+            appState.schemaVersion = SCHEMA_VERSION; appState.appVersion = '2.9.1';
             const text = JSON.stringify(appState, null, 2);
             const pass = prompt('اختياري: اكتب كلمة سر لتشفير النسخة (فيها بيانات طلاب).\nاتركها فارغة لنسخة غير مشفرة.\nتحذير: إن نسيت الكلمة لا يمكن استرجاع النسخة.');
             if (pass === null) return null;
@@ -3671,6 +3688,7 @@
         const TITLES = { noteStudentSelect: 'اختيار الطالب' };
         const esc = v => String(v == null ? '' : v).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
         function titleOf(sel) {
+            if (sel.dataset.csTitle) return sel.dataset.csTitle;
             if (TITLES[sel.id]) return TITLES[sel.id];
             const host = sel.closest('div') && sel.closest('div').parentElement;
             const l = host && host.querySelector('label span');
@@ -3702,6 +3720,7 @@
             const btn = document.createElement('button');
             btn.type = 'button';
             btn.className = sel.className.replace('appearance-none', '') + ' cs-btn';
+            if (!(sel.parentElement && sel.parentElement.querySelector('.fa-chevron-down'))) btn.classList.add('cs-arrow');
             const txt = document.createElement('span'); btn.appendChild(txt);
             const refresh = () => { const o = sel.options[sel.selectedIndex]; txt.textContent = o ? o.textContent : ''; btn.disabled = sel.disabled; };
             Object.defineProperty(sel, 'value', { configurable: true, get() { return valDesc.get.call(sel); }, set(v) { valDesc.set.call(sel, v); refresh(); } });
@@ -3714,6 +3733,14 @@
         }
         document.addEventListener('keydown', e => { if (e.key === 'Escape') closeSheet(); });
         document.querySelectorAll('select').forEach(enhance);
+        // القوائم التي تُبنى لاحقاً (مثل نافذة إدارة السجل وتقسيم الدرجات) تتحول تلقائياً لقوائم التطبيق
+        new MutationObserver(muts => {
+            muts.forEach(m => m.addedNodes.forEach(n => {
+                if (n.nodeType !== 1) return;
+                if (n.tagName === 'SELECT') enhance(n);
+                else if (n.querySelector) n.querySelectorAll('select').forEach(enhance);
+            }));
+        }).observe(document.body, { childList: true, subtree: true });
     })();
     </script>
 <template id="cloudFieldsTpl">
