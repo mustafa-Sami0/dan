@@ -1,5 +1,5 @@
-// Service Worker — سجل المدرس الإلكتروني (2.9.1)
-const CACHE = 'teacher-register-v29-firebase-2.9.1';
+// Service Worker — سجل المدرس الإلكتروني (2.9.2)
+const CACHE = 'teacher-register-v29-firebase-2.9.2';
 const CORE = ['./', './manifest.webmanifest', './icons/icon-192.png', './icons/icon-512.png'];
 
 // لا نرجّع استجابة محوّلة (redirect) لطلب تنقّل: المتصفح يرفضها ويعطي ERR_FAILED

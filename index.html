@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>سجل المدرس الإلكتروني - إصدار 2.9.1</title>
+    <title>سجل المدرس الإلكتروني - إصدار 2.9.2</title>
     <!-- ===== إعدادات التطبيق (PWA) ===== -->
     <meta name="theme-color" content="#1e3a8a">
     <meta name="mobile-web-app-capable" content="yes">
@@ -17,7 +17,7 @@
     <!-- استيراد خط Cairo العربي -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800;900&family=Amiri:wght@400;700&display=swap" rel="stylesheet">
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- FontAwesome للأيقونات -->
@@ -237,20 +237,129 @@
         @page { size: A4 landscape; margin: 8mm; }
         @media print {
             html, body { background:#fff !important; color:#0f172a !important; }
-            body.dark-mode #printHeader, body.dark-mode #printHeader * { color:#0f172a !important; background:transparent !important; }
+            body.dark-mode #printHeader, body.dark-mode #printHeader * { color:#1e3a5f !important; background:transparent !important; }
             .table-container, #emptyStateMessage { display:none !important; }
             section, .rounded-3xl { border:none !important; box-shadow:none !important; padding:0 !important; margin:0 !important; background:transparent !important; }
             #printTableWrap { display:block !important; }
-            #printTableWrap table { width:100%; border-collapse:collapse; table-layout:fixed; direction:rtl; }
-            #printTableWrap th, #printTableWrap td { border:1px solid #334155 !important; padding:3px 2px !important; text-align:center; font-size:10px; line-height:1.25; word-break:break-word; color:#0f172a; }
-            #printTableWrap th { background:#e2e8f0 !important; font-weight:800; }
-            #printTableWrap th.grp { background:#dbeafe !important; }
-            #printTableWrap td.nm { text-align:right; font-weight:700; }
-            #printTableWrap td.fail { color:#dc2626 !important; font-weight:900; }
-            #printTableWrap td.abs { color:#c2410c !important; font-weight:900; }
+            #printHeader { margin:0 0 4mm 0 !important; padding:0 !important; border:none !important; font-family:'Cairo','Segoe UI',Tahoma,Arial,sans-serif; color:#1e3a5f !important; }
+            #printHeader .ph-title { font-family:'Amiri','Traditional Arabic','Noto Naskh Arabic','Times New Roman',serif; font-size:27px; font-weight:700; line-height:1.3; text-align:center; color:#2f5d8a !important; margin:0; letter-spacing:.3px; }
+            #printHeader .ph-rule { display:flex; align-items:center; justify-content:center; gap:6px; margin:1.5mm auto 3.2mm; width:62%; }
+            #printHeader .ph-rule i { flex:1; height:0; border-top:1.4px solid #3a6ea5; }
+            #printHeader .ph-rule b { width:7px; height:7px; background:#d79a4a; transform:rotate(45deg); display:block; }
+            #printHeader .ph-info { width:100%; border-collapse:collapse; table-layout:fixed; direction:rtl; border:1.4px solid #3a6ea5; }
+            #printHeader .ph-info th, #printHeader .ph-info td { border:1px solid #a9c1d9; height:7.6mm; padding:0 6px; font-size:12px; vertical-align:middle; overflow:hidden; white-space:nowrap; text-overflow:ellipsis; }
+            #printHeader .ph-info th { background:#e4eefa !important; color:#2f5d8a !important; font-weight:800; text-align:center; }
+            #printHeader .ph-info td { background:#fff !important; color:#1e3a5f !important; font-weight:700; text-align:right; }
+            #printHeader .ph-info td:empty::after { content:"............................................"; color:#a9c1d9; letter-spacing:1px; }
+            #printHeader .ph-info, #printHeader .ph-info * { -webkit-print-color-adjust:exact; print-color-adjust:exact; }
+            #printTableWrap table { width:100%; border-collapse:collapse; table-layout:fixed; direction:rtl; border:1.6px solid #2f5d8a; }
+            #printTableWrap th, #printTableWrap td { border:1px solid #a9c1d9 !important; padding:0 !important; text-align:center; vertical-align:middle; font-size:10px; line-height:1.2; color:#1e3a5f; overflow:hidden; }
+            #printTableWrap td { height:6.4mm; font-weight:700; font-variant-numeric:tabular-nums; }
+            #printTableWrap tbody tr:nth-child(even) td { background:#f4f8fc; }
+            #printTableWrap tbody td.tot { background:#e4eefa !important; font-weight:800; }
+            #printTableWrap tbody td.avg { background:#d6e6f7 !important; font-weight:900; }
+            #printTableWrap tbody td.mid { background:#fbeed9 !important; font-weight:900; }
+            #printTableWrap tbody td.fin { background:#dcf1e6 !important; font-weight:900; }
+            #printTableWrap tbody td.nm { text-align:right; padding:0 6px !important; font-size:10.5px; font-weight:800; background:#fff !important; white-space:nowrap; text-overflow:ellipsis; }
+            #printTableWrap tbody td.sn { background:#e1ecf7 !important; font-weight:800; }
+            #printTableWrap td.fail { color:#c0392b !important; font-weight:900; }
+            #printTableWrap td.abs { color:#b9722a !important; font-weight:900; }
+            /* ترويسة الجدول: ثلاثة مستويات + أسماء الأعمدة بالطول */
+            #printTableWrap thead th { font-weight:800; color:#fff; border-color:#e6eef7 !important; }
+            #printTableWrap thead tr.h1 th { height:7.5mm; font-size:11.5px; background:#3a6ea5; letter-spacing:.2px; }
+            #printTableWrap thead tr.h2 th { height:6.5mm; font-size:10.5px; background:#5b8fc4; }
+            #printTableWrap thead tr.h3 th { height:24mm; background:#f7fafd; color:#1e3a5f; border-color:#a9c1d9 !important; }
+            #printTableWrap thead th.c-tot { background:#dbe9f8 !important; color:#1e3a5f; }
+            #printTableWrap thead th.c-avg { background:#4a86c5 !important; color:#fff; }
+            #printTableWrap thead th.c-mid { background:#d79a4a !important; color:#fff; }
+            #printTableWrap thead th.c-fin { background:#4fa585 !important; color:#fff; }
+            #printTableWrap thead th.c-nm  { background:#3d8a8f !important; color:#fff; font-size:12px; }
+            #printTableWrap thead th.c-sn  { background:#6aa7ab !important; color:#fff; font-size:11px; }
+            #printTableWrap .vt { display:block; margin:0 auto; writing-mode:vertical-rl; transform:rotate(180deg); white-space:nowrap; font-size:10px; font-weight:800; line-height:1.1; letter-spacing:.2px; direction:ltr; unicode-bidi:plaintext; }
+            #printTableWrap .vt b { font-weight:900; }
+            #printTableWrap .vt.ar { font-size:10.5px; }
+            #printTableWrap table { margin:0 auto; }
+            #printTableWrap table.sz-m td { height:7.6mm; font-size:11.5px; }
+            #printTableWrap table.sz-m .vt { font-size:11.5px; }
+            #printTableWrap table.sz-m td.nm { font-size:12px; }
+            #printTableWrap table.sz-l td { height:8.8mm; font-size:13px; }
+            #printTableWrap table.sz-l .vt { font-size:13px; }
+            #printTableWrap table.sz-l td.nm { font-size:13px; }
+            #printTableWrap table.sz-l thead tr.h3 th { height:28mm; }
+            #printTableWrap table.sz-l .vt.ar, #printTableWrap table.sz-m .vt.ar { font-size:12px; }
+            #printTableWrap table.sz-m thead tr.h1 th, #printTableWrap table.sz-l thead tr.h1 th { font-size:12.5px; }
+            #printHeader { margin-left:auto !important; margin-right:auto !important; }
+            #printTableWrap thead { display:table-header-group; }
             #printTableWrap tr { page-break-inside:avoid; }
             #printTableWrap, #printTableWrap * { -webkit-print-color-adjust:exact; print-color-adjust:exact; }
         }
+
+
+        /* ===== نافذة خيارات الطباعة (بنفس ثيم التطبيق) ===== */
+        .po-overlay{position:fixed;inset:0;z-index:70;display:none;align-items:center;justify-content:center;padding:12px;background:rgba(15,23,42,.6);backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px)}
+        .po-overlay.open{display:flex}
+        .po-card{background:#fff;border-radius:24px;width:100%;max-width:440px;max-height:92vh;display:flex;flex-direction:column;overflow:hidden;box-shadow:0 25px 50px -12px rgba(0,0,0,.45);direction:rtl;font-family:'Cairo',sans-serif;color:#1e293b}
+        .po-head{background:linear-gradient(to left,#0f766e,#065f46);color:#fff;padding:14px 16px;display:flex;align-items:center;justify-content:space-between;flex:none}
+        .po-head h3{margin:0;font-size:16px;font-weight:800;display:flex;align-items:center;gap:8px}
+        .po-x{width:32px;height:32px;border-radius:50%;border:0;background:rgba(255,255,255,.12);color:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:background .15s}
+        .po-x:hover{background:rgba(255,255,255,.28)}
+        .po-body{padding:14px 14px 6px;overflow-y:auto;-webkit-overflow-scrolling:touch}
+        .po-label{margin:0 2px 8px;font-size:12px;font-weight:800;color:#475569}
+        .po-presets{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+        .po-opt{position:relative;display:flex;align-items:center;gap:10px;text-align:right;padding:10px;border-radius:16px;border:1.5px solid #e2e8f0;background:#f8fafc;cursor:pointer;font-family:inherit;transition:border-color .15s,background .15s,box-shadow .15s}
+        .po-opt.wide{grid-column:1/-1}
+        .po-opt:hover:not(:disabled){border-color:#5eead4;background:#f0fdfa}
+        .po-opt:focus-visible,.po-chip:focus-visible,.po-btn:focus-visible,.po-x:focus-visible,.po-links button:focus-visible{outline:2px solid #0d9488;outline-offset:2px}
+        .po-opt:disabled{opacity:.45;cursor:not-allowed}
+        .po-opt.on{border-color:#0d9488;background:#f0fdfa;box-shadow:0 0 0 3px rgba(13,148,136,.14)}
+        .po-ico{flex:none;width:38px;height:38px;border-radius:12px;background:#e2e8f0;color:#475569;display:flex;align-items:center;justify-content:center;font-size:15px;transition:background .15s,color .15s}
+        .po-opt.on .po-ico{background:#0d9488;color:#fff}
+        .po-txt{display:flex;flex-direction:column;min-width:0;flex:1}
+        .po-txt b{font-size:13px;font-weight:800;color:#1e293b;line-height:1.35}
+        .po-txt small{font-size:11px;font-weight:600;color:#64748b}
+        .po-opt .po-tick{position:absolute;top:8px;left:8px;width:18px;height:18px;border-radius:50%;background:#0d9488;color:#fff;font-size:9px;display:none;align-items:center;justify-content:center}
+        .po-opt.on .po-tick{display:flex}
+        .po-custom{margin-top:10px;padding:10px;border-radius:16px;background:#f8fafc;border:1px dashed #cbd5e1}
+        .po-custom[hidden]{display:none}
+        .po-custom-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}
+        .po-custom-top .po-label{margin:0}
+        .po-links button{border:0;background:none;color:#0f766e;font:inherit;font-size:11.5px;font-weight:800;cursor:pointer;padding:2px 6px;border-radius:8px}
+        .po-links button:hover{background:#ccfbf1}
+        .po-chips{display:flex;flex-wrap:wrap;gap:6px}
+        .po-chip{border:1.5px solid #cbd5e1;background:#fff;color:#475569;font:inherit;font-size:12px;font-weight:700;padding:5px 12px;border-radius:999px;cursor:pointer;transition:all .15s}
+        .po-chip:hover{border-color:#0d9488}
+        .po-chip.on{background:#0d9488;border-color:#0d9488;color:#fff}
+        .po-switch-row{position:relative;display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:12px;padding:10px 12px;border-radius:16px;border:1.5px solid #e2e8f0;background:#f8fafc;cursor:pointer}
+        .po-switch-txt{display:flex;flex-direction:column}
+        .po-switch-txt b{font-size:13px;font-weight:800;color:#1e293b}
+        .po-switch-txt small{font-size:11px;font-weight:600;color:#64748b}
+        .po-switch-row input{position:absolute;opacity:0;width:1px;height:1px}
+        .po-switch{flex:none;position:relative;width:44px;height:24px;border-radius:999px;background:#cbd5e1;transition:background .2s}
+        .po-switch::after{content:"";position:absolute;top:3px;right:3px;width:18px;height:18px;border-radius:50%;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.3);transition:transform .2s}
+        .po-switch-row input:checked + .po-switch{background:#0d9488}
+        .po-switch-row input:checked + .po-switch::after{transform:translateX(-20px)}
+        .po-switch-row input:focus-visible + .po-switch{outline:2px solid #0d9488;outline-offset:2px}
+        .po-summary{margin:12px 2px 6px;padding:9px 12px;border-radius:12px;background:#ecfdf5;color:#065f46;font-size:12px;font-weight:700;display:flex;align-items:center;gap:8px;line-height:1.5}
+        .po-summary b{font-weight:900}
+        .po-summary.warn{background:#fffbeb;color:#92400e}
+        .po-foot{display:flex;gap:8px;padding:10px 14px 14px;flex:none}
+        .po-btn{flex:1;border:0;border-radius:14px;padding:12px 10px;font:inherit;font-size:14px;font-weight:800;cursor:pointer;background:#f1f5f9;color:#334155;transition:background .15s,transform .05s,opacity .15s;display:flex;align-items:center;justify-content:center;gap:8px}
+        .po-btn:hover{background:#e2e8f0}
+        .po-btn:active{transform:scale(.98)}
+        .po-btn.primary{flex:2;background:linear-gradient(to left,#0f766e,#047857);color:#fff;box-shadow:0 6px 16px -6px rgba(15,118,110,.7)}
+        .po-btn.primary:hover{background:linear-gradient(to left,#115e59,#065f46)}
+        .po-btn:disabled{opacity:.5;cursor:not-allowed;box-shadow:none}
+        body.dark-mode .po-card{background:#1e293b;color:#e2e8f0}
+        body.dark-mode .po-opt,body.dark-mode .po-switch-row,body.dark-mode .po-custom{background:#0f172a;border-color:#475569}
+        body.dark-mode .po-opt.on{background:#134e4a;border-color:#2dd4bf}
+        body.dark-mode .po-txt b,body.dark-mode .po-switch-txt b,body.dark-mode .po-label{color:#e2e8f0}
+        body.dark-mode .po-txt small,body.dark-mode .po-switch-txt small{color:#94a3b8}
+        body.dark-mode .po-ico{background:#334155;color:#cbd5e1}
+        body.dark-mode .po-chip{background:#0f172a;border-color:#475569;color:#cbd5e1}
+        body.dark-mode .po-chip.on{background:#0d9488;color:#fff}
+        body.dark-mode .po-btn{background:#334155;color:#e2e8f0}
+        body.dark-mode .po-summary{background:#064e3b;color:#a7f3d0}
+        @media print{ .po-overlay{display:none !important} }
 
         /* إصدار 2.1.0: أدوات الإدخال والوضع الداكن */
         #nextGradeBtn{position:fixed;z-index:95;left:12px;bottom:10px;display:none;background:#059669;color:#fff;font-weight:800;font-size:16px;padding:10px 18px;border-radius:14px;box-shadow:0 6px 20px #0004}
@@ -334,27 +443,24 @@
 <body class="pb-12">
 
     <!-- ترويسة الطباعة (تظهر فقط عند التصدير لـ PDF) -->
-    <div id="printHeader" class="hidden print-only mb-5 border-b-2 border-slate-800 pb-3">
-        <div class="flex justify-between items-center text-xs font-bold">
-            <div>
-                <p id="printSchoolName"></p>
-                <p id="printSubjectName"></p>
-            </div>
-            <div class="text-center">
-                <h1 class="text-lg font-extrabold mb-1">سجل درجات الطلاب الرسمي</h1>
-                <p id="printYearClass" class="text-slate-700">السنة الدراسية: 2025 - 2026 | الثاني المتوسط - شعبة (أ)</p>
-            </div>
-            <div class="text-left">
-                <p id="printTeacherName"></p>
-                <p id="printDate">التاريخ: 2026</p>
-            </div>
-        </div>
+    <div id="printHeader" class="hidden print-only">
+        <h1 class="ph-title">سجل درجات الطلاب الرسمي</h1>
+        <div class="ph-rule"><i></i><b></b><i></i></div>
+        <table class="ph-info">
+            <colgroup><col style="width:26mm"><col><col style="width:28mm"><col><col style="width:26mm"><col></colgroup>
+            <tr>
+                <th>اسم المدرسة</th><td id="printSchoolName"></td>
+                <th>المادة الدراسية</th><td id="printSubjectName"></td>
+                <th>اسم المدرس</th><td id="printTeacherName"></td>
+            </tr>
+            <tr>
+                <th>السنة الدراسية</th><td id="printYear"></td>
+                <th>الصف والشعبة</th><td id="printClassSection"></td>
+                <th>تاريخ الطباعة</th><td id="printDate"></td>
+            </tr>
+        </table>
     </div>
 
-    <!-- الحاوية الرئيسية -->
-    <div class="max-w-6xl mx-auto px-2.5 sm:px-6 pt-3">
-        
-        <!-- 1. الترويسة العلوية الزرقاء -->
         <header class="no-print bg-gradient-to-l from-blue-900 via-blue-800 to-indigo-900 text-white rounded-3xl p-4 sm:p-5 shadow-lg mb-3.5 relative overflow-hidden">
             <div class="relative z-10 flex flex-col items-center text-center">
                 <div class="flex items-center gap-2 mb-1">
@@ -1020,7 +1126,7 @@
                 </button>
                 <div class="mt-3 pt-3 border-t border-slate-200 text-center space-y-0.5">
                     <p class="text-[12px] font-extrabold text-slate-700">سجل المدرس الإلكتروني</p>
-                    <p class="text-[11px] font-bold text-slate-500">الإصدار 2.9.1</p>
+                    <p class="text-[11px] font-bold text-slate-500">الإصدار 2.9.2</p>
                     <p class="text-[11px] font-semibold text-slate-500">جميع الحقوق محفوظة © 2026</p>
                     <p class="text-[11px] font-semibold text-slate-500">المطوّر: <span class="font-extrabold text-blue-800">مصطفى سامي</span></p>
                 </div>
@@ -1097,7 +1203,7 @@
                 <button onclick="closeModal('exportModal')" class="w-8 h-8 rounded-full bg-white/10 hover:bg-white/25 flex items-center justify-center transition"><i class="fa-solid fa-xmark"></i></button>
             </div>
             <div class="p-3 space-y-2">
-                <button onclick="closeModal('exportModal');exportToPDF()" class="w-full flex items-center gap-3 bg-teal-50 hover:bg-teal-100 border border-teal-200 rounded-2xl px-3 py-3 text-right transition">
+                <button onclick="closeModal('exportModal');openPrintOptions()" class="w-full flex items-center gap-3 bg-teal-50 hover:bg-teal-100 border border-teal-200 rounded-2xl px-3 py-3 text-right transition">
                     <span class="w-10 h-10 rounded-xl bg-teal-600 text-white flex items-center justify-center"><i class="fa-solid fa-file-pdf"></i></span>
                     <span class="flex-1"><span class="block text-sm font-extrabold text-slate-800">ملف PDF</span><span class="block text-[11px] text-slate-500 font-semibold">للطباعة والمشاركة</span></span>
                 </button>
@@ -1105,6 +1211,36 @@
                     <span class="w-10 h-10 rounded-xl bg-emerald-600 text-white flex items-center justify-center"><i class="fa-solid fa-file-excel"></i></span>
                     <span class="flex-1"><span class="block text-sm font-extrabold text-slate-800">ملف Excel</span><span class="block text-[11px] text-slate-500 font-semibold">لتعديل البيانات</span></span>
                 </button>
+            </div>
+        </div>
+    </div>
+
+    <div id="printOptModal" class="po-overlay" onclick="if(event.target===this)closePrintOptions()">
+        <div class="po-card" role="dialog" aria-modal="true" aria-labelledby="poTitle">
+            <div class="po-head">
+                <h3 id="poTitle"><i class="fa-solid fa-print"></i> خيارات الطباعة</h3>
+                <button type="button" class="po-x" onclick="closePrintOptions()" aria-label="إغلاق"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <div class="po-body">
+                <p class="po-label">ماذا تريد أن تطبع؟</p>
+                <div id="poPresets" class="po-presets"></div>
+                <div id="poCustomBox" class="po-custom" hidden>
+                    <div class="po-custom-top">
+                        <span class="po-label">اختر الأعمدة</span>
+                        <span class="po-links"><button type="button" onclick="poSelectAll(true)">تحديد الكل</button><button type="button" onclick="poSelectAll(false)">مسح</button></span>
+                    </div>
+                    <div id="poChips" class="po-chips"></div>
+                </div>
+                <label class="po-switch-row">
+                    <span class="po-switch-txt"><b>إظهار رقم الصفحة</b><small>«صفحة 1 من 3» أسفل كل ورقة</small></span>
+                    <input type="checkbox" id="poPageNum" checked onchange="poState.pageNum=this.checked">
+                    <i class="po-switch"></i>
+                </label>
+                <div id="poSummary" class="po-summary"></div>
+            </div>
+            <div class="po-foot">
+                <button type="button" id="poPrintBtn" class="po-btn primary" onclick="runPrintFromOptions()"><i class="fa-solid fa-print"></i> طباعة / حفظ PDF</button>
+                <button type="button" class="po-btn" onclick="closePrintOptions()">إلغاء</button>
             </div>
         </div>
     </div>
@@ -1658,11 +1794,12 @@
             if (subjectName) chips.push('<span class="meta-chip"><i class="fa-solid fa-book-open"></i>' + escH(subjectName) + '</span>');
             if (teacherName) chips.push('<span class="meta-chip"><i class="fa-solid fa-user-tie"></i>' + escH(teacherName) + '</span>');
             document.getElementById('headerMetaInfo').innerHTML = chips.length ? chips.join('') : '<span class="meta-hint">اضغط «الإعدادات» ثم «بيانات المدرس» لإدخال بياناتك</span>';
-            document.getElementById('printSchoolName').textContent = schoolName ? `المدرسة: ${schoolName}` : '';
-            document.getElementById('printSubjectName').textContent = subjectName ? `المادة: ${subjectName}` : '';
-            document.getElementById('printTeacherName').textContent = teacherName ? `مدرس المادة: ${teacherName}` : '';
-            document.getElementById('printYearClass').textContent = `السنة الدراسية: ${appState.selectedYear} | ${appState.selectedClass} - ${appState.selectedSection}`;
-            document.getElementById('printDate').textContent = `تاريخ الطباعة: ${new Date().toLocaleDateString('ar-IQ')}`;
+            document.getElementById('printSchoolName').textContent = schoolName || '';
+            document.getElementById('printSubjectName').textContent = subjectName || '';
+            document.getElementById('printTeacherName').textContent = teacherName || '';
+            document.getElementById('printYear').textContent = appState.selectedYear || '';
+            document.getElementById('printClassSection').textContent = `${appState.selectedClass || ''} - ${appState.selectedSection || ''}`;
+            document.getElementById('printDate').textContent = new Date().toLocaleDateString('ar-IQ');
         }
 
         function populateSelectors() {
@@ -2629,7 +2766,7 @@
 
         // النسخ الاحتياطي JSON
         async function buildBackupText() {
-            appState.schemaVersion = SCHEMA_VERSION; appState.appVersion = '2.9.1';
+            appState.schemaVersion = SCHEMA_VERSION; appState.appVersion = '2.9.2';
             const text = JSON.stringify(appState, null, 2);
             const pass = prompt('اختياري: اكتب كلمة سر لتشفير النسخة (فيها بيانات طلاب).\nاتركها فارغة لنسخة غير مشفرة.\nتحذير: إن نسيت الكلمة لا يمكن استرجاع النسخة.');
             if (pass === null) return null;
@@ -3109,46 +3246,208 @@
         // ===================== نهاية الغياب والسلوك =====================
 
         // تصدير PDF و Excel
-        function buildPrintTable() {
+        // ---------- مساعدات الطباعة ----------
+        function printKind(c) { return c.id === 'mid_year' ? 'mid' : c.id === 'final_avg' ? 'fin' : (c.type === 'avg' ? 'avg' : (c.type === 'sum' ? 'tot' : 'in')); }
+        function getPrintGroups() {
+            const groups = [];
+            appState.columns.forEach(c => {
+                const g = c.group || 'عام';
+                if (groups.length && groups[groups.length-1].name === g) groups[groups.length-1].cols.push(c);
+                else groups.push({ name: g, cols: [c] });
+            });
+            groups.forEach((g, i) => {
+                const m = g.name.split(/\s*[-–—]\s*/);
+                if (m.length > 1) { g.top = m[0].trim(); g.sub = m.slice(1).join(' - ').trim(); }
+                else if (/^الشهر/.test(g.name)) {
+                    let k = i + 1;
+                    while (k < groups.length && /^الشهر/.test(groups[k].name)) k++;
+                    g.top = (k < groups.length && /^الفصل/.test(groups[k].name)) ? groups[k].name : g.name;
+                    g.sub = g.top === g.name ? null : g.name;
+                } else { g.top = g.name; g.sub = null; }
+            });
+            return groups;
+        }
+
+        // sel: مجموعة بأسماء المجموعات المطلوب طباعتها (null = الكل)
+        function buildPrintTable(sel) {
             const wrap = document.getElementById('printTableWrap');
             const sectionObj = getCurrentSectionObj();
             if (!wrap) return;
             if (!sectionObj || !sectionObj.students.length) { wrap.innerHTML = ''; return; }
             const esc = v => String(v == null ? '' : v).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
-            const cols = appState.columns;
-            const groups = [];
-            cols.forEach(c => {
-                const g = c.group || 'عام';
-                if (groups.length && groups[groups.length-1].name === g) groups[groups.length-1].count++;
-                else groups.push({ name: g, count: 1 });
+            const hasAr = t => /[\u0600-\u06FF]/.test(t);
+
+            const groups = getPrintGroups().filter(g => !sel || sel.has(g.name));
+            const cols = groups.reduce((a, g) => a.concat(g.cols), []);
+            const kind = printKind;
+            const H3 = 24;                       // ارتفاع صف أسماء الأعمدة (ملم)
+            const hs = rs => (rs === 3 ? 7.5 + 6.5 + H3 : 6.5 + H3) + 'mm';   // ارتفاع الخلية الممتدة على صفوف
+
+            const blocks = [];
+            groups.forEach(g => {
+                const last = blocks[blocks.length-1];
+                if (last && last.top === g.top && g.top !== g.name) last.items.push(g);
+                else if (last && last.top === g.top && last.items.every(x => x.sub)) last.items.push(g);
+                else blocks.push({ top: g.top, items: [g] });
             });
-            const nameW = 22, numW = 4;
-            const colW = ((100 - nameW - numW) / cols.length).toFixed(2);
-            let h = '<table><colgroup><col style="width:' + numW + '%"><col style="width:' + nameW + '%">';
-            cols.forEach(() => { h += '<col style="width:' + colW + '%">'; });
-            h += '</colgroup><thead><tr><th rowspan="2">ت</th><th rowspan="2">اسم الطالب</th>';
-            groups.forEach(g => { h += '<th class="grp" colspan="' + g.count + '">' + esc(g.name) + '</th>'; });
-            h += '</tr><tr>';
-            cols.forEach(c => { h += '<th>' + esc(c.label) + '<br>(' + esc(c.max) + ')</th>'; });
-            h += '</tr></thead><tbody>';
+
+            const vlabel = c => {
+                const l = String(c.label == null ? '' : c.label).trim();
+                const mx = String(c.max == null ? '' : c.max);
+                const showMax = mx && !new RegExp('(^|\\s)' + mx + '$').test(l);
+                return '<span class="vt' + (hasAr(l) ? ' ar' : '') + '">' + esc(l) + (showMax ? ' <b>' + esc(mx) + '</b>' : '') + '</span>';
+            };
+            const thCol = (c, rs) => '<th class="c-' + kind(c) + '"' + (rs > 1 ? ' rowspan="' + rs + '" style="height:' + hs(rs) + '"' : '') + '>' + vlabel(c) + '</th>';
+
+            let r1 = '<th class="c-sn" rowspan="3" style="height:' + hs(3) + '">ت</th><th class="c-nm" rowspan="3" style="height:' + hs(3) + '">اسم الطالب</th>';
+            let r2 = '', r3 = '';
+            blocks.forEach(bl => {
+                const allCols = bl.items.reduce((n, g) => n + g.cols.length, 0);
+                const single = bl.items.length === 1 && allCols === 1 && !bl.items[0].sub;
+                if (single) { r1 += thCol(bl.items[0].cols[0], 3); return; }
+                r1 += '<th colspan="' + allCols + '">' + esc(bl.top) + '</th>';
+                bl.items.forEach(g => {
+                    if (g.sub) {
+                        r2 += '<th colspan="' + g.cols.length + '">' + esc(g.sub) + '</th>';
+                        g.cols.forEach(c => { r3 += thCol(c, 1); });
+                    } else {
+                        g.cols.forEach(c => { r2 += thCol(c, 2); });
+                    }
+                });
+            });
+
+            // أبعاد الجدول بالملم (A4 أفقي = 281mm عرض مفيد): كلما قلّت الأعمدة كبر الخط والعرض
+            const n = cols.length, PAGE = 281, numMm = 9;
+            let nameMm = n >= 20 ? 48 : (n >= 10 ? 58 : 72);
+            const maxCol = n <= 6 ? 24 : (n <= 14 ? 16 : 14);
+            const colMm = Math.min((PAGE - numMm - nameMm) / n, maxCol);
+            const total = numMm + nameMm + colMm * n;
+            const target = Math.max(total, 215);
+            nameMm += target - total;
+            const ph = document.getElementById('printHeader');
+            if (ph) ph.style.width = target.toFixed(1) + 'mm';
+            const sz = n <= 6 ? 'sz-l' : (n <= 14 ? 'sz-m' : '');
+
+            let h = '<table class="' + sz + '" style="width:' + target.toFixed(1) + 'mm"><colgroup><col style="width:' + numMm + 'mm"><col style="width:' + nameMm.toFixed(1) + 'mm">';
+            cols.forEach(() => { h += '<col style="width:' + colMm.toFixed(2) + 'mm">'; });
+            h += '</colgroup><thead><tr class="h1">' + r1 + '</tr><tr class="h2">' + r2 + '</tr><tr class="h3">' + r3 + '</tr></thead><tbody>';
+
             sectionObj.students.forEach((st, i) => {
                 const comp = computeStudentValues(st);
-                h += '<tr><td>' + (i + 1) + '</td><td class="nm">' + esc(st.name) + '</td>';
+                h += '<tr><td class="sn">' + (i + 1) + '</td><td class="nm">' + esc(st.name) + '</td>';
                 cols.forEach(c => {
                     const v = comp[c.id];
-                    let cls = '';
+                    let cls = kind(c) === 'in' ? '' : kind(c);
                     if (v !== '' && v !== undefined) {
-                        if (v === 'غ' || v === 'م') cls = 'abs';
-                        else if (!isNaN(parseFloat(v)) && parseFloat(v) < c.max / 2) cls = 'fail';
+                        if (v === 'غ' || v === 'م') cls += ' abs';
+                        else if (!isNaN(parseFloat(v)) && parseFloat(v) < c.max / 2) cls += ' fail';
                     }
-                    h += '<td class="' + cls + '">' + (v !== '' && v !== undefined ? esc(v) : '') + '</td>';
+                    h += '<td class="' + cls.trim() + '">' + (v !== '' && v !== undefined ? esc(v) : '') + '</td>';
                 });
                 h += '</tr>';
             });
             h += '</tbody></table>';
             wrap.innerHTML = h;
         }
-        function exportToPDF() { updateHeaderUI(); buildPrintTable(); setTimeout(() => window.print(), 150); }
+
+        // ---------- نافذة خيارات الطباعة ----------
+        const PO_KEY = 'teacher_print_opts';
+        const poState = { preset: 'full', custom: new Set(), pageNum: true };
+        const PO_PRESETS = [
+            { id: 'full', icon: 'fa-table-cells', title: 'السجل الكامل', pick: gs => gs },
+            { id: 'sem1', icon: 'fa-1', title: 'الفصل الأول', pick: gs => gs.filter(g => g.top === 'الفصل الأول' || g.name === 'نصف السنة') },
+            { id: 'sem2', icon: 'fa-2', title: 'الفصل الثاني', pick: gs => gs.filter(g => g.top === 'الفصل الثاني') },
+            { id: 'avg', icon: 'fa-chart-bar', title: 'المعدلات فقط', pick: gs => gs.filter(g => g.cols.every(c => ['avg', 'mid', 'fin'].includes(printKind(c)))) },
+            { id: 'custom', icon: 'fa-sliders', title: 'اختيار مخصص', pick: null }
+        ];
+        const poCount = gs => gs.reduce((a, g) => a + g.cols.length, 0);
+        function poSelectedNames() {
+            const gs = getPrintGroups();
+            if (poState.preset === 'custom') return new Set(gs.filter(g => poState.custom.has(g.name)).map(g => g.name));
+            const p = PO_PRESETS.find(x => x.id === poState.preset);
+            return new Set((p && p.pick ? p.pick(gs) : gs).map(g => g.name));
+        }
+        function poRender() {
+            const gs = getPrintGroups();
+            const box = document.getElementById('poPresets');
+            let html = '';
+            PO_PRESETS.forEach(p => {
+                const cnt = p.pick ? poCount(p.pick(gs)) : poCount(gs.filter(g => poState.custom.has(g.name)));
+                const disabled = p.pick && cnt === 0;
+                const sub = p.id === 'custom' ? (poState.preset === 'custom' ? cnt + ' عمود محدد' : 'اختر بنفسك') : cnt + ' عمود';
+                html += '<button type="button" class="po-opt' + (poState.preset === p.id ? ' on' : '') + (p.id === 'custom' ? ' wide' : '') + '"' + (disabled ? ' disabled' : '') + ' onclick="poPick(\'' + p.id + '\')">'
+                    + '<span class="po-ico"><i class="fa-solid ' + p.icon + '"></i></span>'
+                    + '<span class="po-txt"><b>' + p.title + '</b><small>' + sub + '</small></span>'
+                    + '<i class="fa-solid fa-check po-tick"></i></button>';
+            });
+            box.innerHTML = html;
+            const cb = document.getElementById('poCustomBox');
+            cb.hidden = poState.preset !== 'custom';
+            if (poState.preset === 'custom') {
+                document.getElementById('poChips').innerHTML = gs.map((g, i) =>
+                    '<button type="button" class="po-chip' + (poState.custom.has(g.name) ? ' on' : '') + '" onclick="poToggle(' + i + ')">' + cdEsc(g.name) + '</button>').join('');
+            }
+            const names = poSelectedNames();
+            const sel = gs.filter(g => names.has(g.name));
+            const n = poCount(sel);
+            const stu = (getCurrentSectionObj() || { students: [] }).students.length;
+            document.getElementById('poSummary').innerHTML = n
+                ? '<i class="fa-solid fa-circle-info"></i> سيتم طباعة <b>' + n + '</b> عمود لـ <b>' + stu + '</b> طالب على ورق A4 أفقي'
+                : '<i class="fa-solid fa-triangle-exclamation"></i> اختر عموداً واحداً على الأقل';
+            document.getElementById('poSummary').classList.toggle('warn', !n);
+            document.getElementById('poPrintBtn').disabled = !n;
+            document.getElementById('poPageNum').checked = poState.pageNum;
+        }
+        function poPick(id) {
+            if (id === 'custom' && poState.preset !== 'custom') poState.custom = poSelectedNames();
+            poState.preset = id; poRender();
+        }
+        function poToggle(i) {
+            const g = getPrintGroups()[i]; if (!g) return;
+            if (poState.custom.has(g.name)) poState.custom.delete(g.name); else poState.custom.add(g.name);
+            poRender();
+        }
+        function poSelectAll(on) {
+            poState.custom = on ? new Set(getPrintGroups().map(g => g.name)) : new Set();
+            poRender();
+        }
+        function openPrintOptions() {
+            try {
+                const saved = JSON.parse(localStorage.getItem(PO_KEY) || 'null');
+                if (saved) {
+                    const names = new Set(getPrintGroups().map(g => g.name));
+                    if (PO_PRESETS.some(p => p.id === saved.preset)) poState.preset = saved.preset;
+                    poState.custom = new Set((saved.custom || []).filter(x => names.has(x)));
+                    poState.pageNum = saved.pageNum !== false;
+                }
+            } catch (e) {}
+            const cur = PO_PRESETS.find(p => p.id === poState.preset);
+            if (cur && cur.pick && !poCount(cur.pick(getPrintGroups()))) poState.preset = 'full';
+            document.getElementById('printOptModal').classList.add('open');
+            poRender();
+        }
+        function closePrintOptions() { document.getElementById('printOptModal').classList.remove('open'); }
+        function applyPrintPageStyle(pageNum) {
+            let st = document.getElementById('printPageStyle');
+            if (!st) { st = document.createElement('style'); st.id = 'printPageStyle'; document.head.appendChild(st); }
+            st.textContent = pageNum
+                ? '@page{size:A4 landscape;margin:8mm 8mm 14mm 8mm;@bottom-center{content:"صفحة " counter(page) " من " counter(pages);font-family:Cairo,Tahoma,Arial,sans-serif;font-size:10px;font-weight:700;color:#3a6ea5;}}'
+                : '@page{size:A4 landscape;margin:8mm}';
+        }
+        function doPrint(sel, pageNum) {
+            updateHeaderUI(); buildPrintTable(sel); applyPrintPageStyle(pageNum);
+            const ready = (document.fonts && document.fonts.ready) ? document.fonts.ready.catch(() => {}) : Promise.resolve();
+            ready.then(() => setTimeout(() => window.print(), 150));
+        }
+        function runPrintFromOptions() {
+            poState.pageNum = document.getElementById('poPageNum').checked;
+            try { localStorage.setItem(PO_KEY, JSON.stringify({ preset: poState.preset, custom: [...poState.custom], pageNum: poState.pageNum })); } catch (e) {}
+            const sel = poSelectedNames();
+            if (!sel.size) return;
+            closePrintOptions();
+            doPrint(sel, poState.pageNum);
+        }
+        function exportToPDF() { openPrintOptions(); }
 
         function csvCell(v) {
             let t = String(v == null ? '' : v);
