@@ -1,5 +1,5 @@
-// Service Worker — سجل المدرس الإلكتروني (3.0.0)
-const VERSION = '3.0.0';
+// Service Worker — سجل المدرس الإلكتروني (3.0.2)
+const VERSION = '3.0.2';
 const CACHE = 'teacher-register-v29-firebase-' + VERSION;
 const CORE = ['./', './manifest.webmanifest', './icons/icon-192.png', './icons/icon-512.png'];
 

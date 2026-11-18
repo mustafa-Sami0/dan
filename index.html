@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>سجل المدرس الإلكتروني - إصدار 3.0.0</title>
+    <title>سجل المدرس الإلكتروني - إصدار 3.0.2</title>
     <!-- ===== إعدادات التطبيق (PWA) ===== -->
     <meta name="theme-color" content="#1e3a8a">
     <meta name="mobile-web-app-capable" content="yes">
@@ -297,6 +297,8 @@
             #printTableWrap table.sz-l .vt.ar, #printTableWrap table.sz-m .vt.ar { font-size:12px; }
             #printTableWrap table.sz-m thead tr.h1 th, #printTableWrap table.sz-l thead tr.h1 th { font-size:12.5px; }
             #printHeader { margin-left:auto !important; margin-right:auto !important; }
+            #printTableWrap .pr-sign { display:flex; justify-content:space-between; direction:rtl; margin:7mm 12mm 0; padding-bottom:20mm; page-break-inside:avoid; break-inside:avoid; font-family:'Cairo','Segoe UI',Tahoma,Arial,sans-serif; font-size:14px; font-weight:800; color:#2f5d8a; }
+            #printTableWrap .pr-sign > div { min-width:55mm; text-align:center; }
             #printTableWrap thead { display:table-header-group; }
             #printTableWrap tr { page-break-inside:avoid; }
             #printTableWrap, #printTableWrap * { -webkit-print-color-adjust:exact; print-color-adjust:exact; }
@@ -1261,7 +1263,7 @@
                 </button>
                 <div class="mt-3 pt-3 border-t border-slate-200 text-center space-y-0.5">
                     <p class="text-[12px] font-extrabold text-slate-700">سجل المدرس الإلكتروني</p>
-                    <p class="text-[11px] font-bold text-slate-500">الإصدار 3.0.0</p>
+                    <p class="text-[11px] font-bold text-slate-500">الإصدار 3.0.2</p>
                     <p class="text-[11px] font-semibold text-slate-500">جميع الحقوق محفوظة © 2026</p>
                     <p class="text-[11px] font-semibold text-slate-500">المطوّر: <span class="font-extrabold text-blue-800">مصطفى سامي</span></p>
                 </div>
@@ -2974,7 +2976,7 @@
 
         // النسخ الاحتياطي JSON
         async function buildBackupText() {
-            appState.schemaVersion = SCHEMA_VERSION; appState.appVersion = '3.0.0';
+            appState.schemaVersion = SCHEMA_VERSION; appState.appVersion = '3.0.2';
             const text = JSON.stringify(appState, null, 2);
             const pass = prompt('اختياري: اكتب كلمة سر لتشفير النسخة (فيها بيانات طلاب).\nاتركها فارغة لنسخة غير مشفرة.\nتحذير: إن نسيت الكلمة لا يمكن استرجاع النسخة.');
             if (pass === null) return null;
@@ -3484,6 +3486,7 @@
             if (!sectionObj || !sectionObj.students.length) { wrap.innerHTML = ''; return; }
             const esc = v => String(v == null ? '' : v).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
             const hasAr = t => /[\u0600-\u06FF]/.test(t);
+            const fl = t => String(t == null ? '' : t).replace(/ف\s*1(?!\d)/g, 'الفصل الأول').replace(/ف\s*2(?!\d)/g, 'الفصل الثاني');
 
             const groups = getPrintGroups().filter(g => !sel || sel.has(g.name));
             const cols = groups.reduce((a, g) => a.concat(g.cols), []);
@@ -3502,7 +3505,7 @@
             });
 
             const vlabel = c => {
-                const l = String(c.label == null ? '' : c.label).trim();
+                const l = fl(c.label == null ? '' : c.label).trim();
                 const mx = String(c.max == null ? '' : c.max);
                 const showMax = mx && !new RegExp('(^|\\s)' + mx + '$').test(l);
                 return '<span class="vt' + (hasAr(l) ? ' ar' : '') + '">' + esc(l) + (showMax ? ' <b>' + esc(mx) + '</b>' : '') + '</span>';
@@ -3576,13 +3579,14 @@
                 });
                 const pc = v => v === null ? '—' : v + '%';
                 h += '<table class="pr-sum" style="width:' + target.toFixed(1) + 'mm"><caption>نسب النجاح والرسوب</caption><thead><tr><th></th>'
-                    + st.map(x => '<th>' + esc(x.c.label) + '</th>').join('') + '</tr></thead><tbody>'
+                    + st.map(x => '<th>' + esc(fl(x.c.label)) + '</th>').join('') + '</tr></thead><tbody>'
                     + '<tr><th>عدد الناجحين</th>' + st.map(x => '<td>' + x.pass + '</td>').join('') + '</tr>'
                     + '<tr><th>عدد الراسبين</th>' + st.map(x => '<td>' + x.fail + '</td>').join('') + '</tr>'
                     + '<tr><th>نسبة النجاح</th>' + st.map(x => '<td class="ok">' + pc(x.pr) + '</td>').join('') + '</tr>'
                     + '<tr><th>نسبة الرسوب</th>' + st.map(x => '<td class="no">' + pc(x.fr) + '</td>').join('') + '</tr>'
                     + '</tbody></table>';
             }
+            h += '<div class="pr-sign"><div>مدير المدرسة</div><div>مدرس المادة</div></div>';
             wrap.innerHTML = h;
         }
 
@@ -3806,7 +3810,8 @@
             const Hh = hdr ? hdr.offsetHeight + parseFloat(d.defaultView.getComputedStyle(hdr).marginBottom || 0) : 0;
             const Ht = tbl.tHead.offsetHeight;
             const sum = d.querySelector('.pr-sum');
-            const Hs = sum ? sum.offsetHeight + 5 * mm : 0;
+            const sgn = d.querySelector('.pr-sign');
+            const Hs = (sum ? sum.offsetHeight + 5 * mm : 0) + (sgn ? sgn.offsetHeight + 7 * mm : 0);
             const K = PDF_ROWS_PER_PAGE;
             const avail = N > K ? (U - Hh - Ht) : (U - Hh - Ht - Hs);
             const cnt = N > K ? K : N;
@@ -4130,7 +4135,7 @@
     <script>
         // تسجيل Service Worker + إشعار التحديث (شريط علوي): يظهر الإصدار الجديد، وعند الضغط يتحدث التطبيق ثم يؤكد
         (function () {
-            const APP_VERSION = '3.0.0';
+            const APP_VERSION = '3.0.2';
             const UPD_KEY = 'teacher_app_updated_to';
             const $ = id => document.getElementById(id);
             const ICON_UPD = '<svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 0 1-15.5 6.2L3 16"/><path d="M3 12A9 9 0 0 1 18.5 5.8L21 8"/><path d="M21 3v5h-5"/><path d="M3 21v-5h5"/></svg>';
