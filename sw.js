@@ -1,5 +1,6 @@
-// Service Worker — سجل المدرس الإلكتروني (2.9.3)
-const CACHE = 'teacher-register-v29-firebase-2.9.3';
+// Service Worker — سجل المدرس الإلكتروني (2.9.5)
+const VERSION = '2.9.5';
+const CACHE = 'teacher-register-v29-firebase-' + VERSION;
 const CORE = ['./', './manifest.webmanifest', './icons/icon-192.png', './icons/icon-512.png'];
 
 // لا نرجّع استجابة محوّلة (redirect) لطلب تنقّل: المتصفح يرفضها ويعطي ERR_FAILED
@@ -13,8 +14,14 @@ self.addEventListener('install', e => {
   e.waitUntil(
     caches.open(CACHE)
       .then(c => Promise.all(CORE.map(u => fetch(u).then(r => clean(r)).then(r => r && r.ok ? c.put(u, r) : null).catch(() => null))))
-      .then(() => self.skipWaiting())
+      // لا skipWaiting تلقائي: التحديث الجديد ينتظر حتى يضغط المدرس «تحديث الآن»
   );
+});
+
+self.addEventListener('message', e => {
+  const d = e.data || {};
+  if (d.type === 'SKIP_WAITING') self.skipWaiting();
+  else if (d.type === 'GET_VERSION' && e.ports && e.ports[0]) e.ports[0].postMessage({ version: VERSION });
 });
 
 self.addEventListener('activate', e => {
