@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>سجل المدرس الإلكتروني - إصدار 2.9.5</title>
+    <title>سجل المدرس الإلكتروني - إصدار 3.0.0</title>
     <!-- ===== إعدادات التطبيق (PWA) ===== -->
     <meta name="theme-color" content="#1e3a8a">
     <meta name="mobile-web-app-capable" content="yes">
@@ -241,17 +241,16 @@
             .table-container, #emptyStateMessage { display:none !important; }
             section, .rounded-3xl { border:none !important; box-shadow:none !important; padding:0 !important; margin:0 !important; background:transparent !important; }
             #printTableWrap { display:block !important; }
-            #printHeader { margin:0 0 4mm 0 !important; padding:0 !important; border:none !important; font-family:'Cairo','Segoe UI',Tahoma,Arial,sans-serif; color:#1e3a5f !important; }
-            #printHeader .ph-title { font-family:'Amiri','Traditional Arabic','Noto Naskh Arabic','Times New Roman',serif; font-size:27px; font-weight:700; line-height:1.3; text-align:center; color:#2f5d8a !important; margin:0; letter-spacing:.3px; }
-            #printHeader .ph-rule { display:flex; align-items:center; justify-content:center; gap:6px; margin:1.5mm auto 3.2mm; width:62%; }
-            #printHeader .ph-rule i { flex:1; height:0; border-top:1.4px solid #3a6ea5; }
-            #printHeader .ph-rule b { width:7px; height:7px; background:#d79a4a; transform:rotate(45deg); display:block; }
-            #printHeader .ph-info { width:100%; border-collapse:collapse; table-layout:fixed; direction:rtl; border:1.4px solid #3a6ea5; }
-            #printHeader .ph-info th, #printHeader .ph-info td { border:1px solid #a9c1d9; height:7.6mm; padding:0 6px; font-size:12px; vertical-align:middle; overflow:hidden; white-space:nowrap; text-overflow:ellipsis; }
-            #printHeader .ph-info th { background:#e4eefa !important; color:#2f5d8a !important; font-weight:800; text-align:center; }
-            #printHeader .ph-info td { background:#fff !important; color:#1e3a5f !important; font-weight:700; text-align:right; }
-            #printHeader .ph-info td:empty::after { content:"............................................"; color:#a9c1d9; letter-spacing:1px; }
-            #printHeader .ph-info, #printHeader .ph-info * { -webkit-print-color-adjust:exact; print-color-adjust:exact; }
+            #printHeader { margin:0 0 2.2mm 0 !important; padding:0 !important; border:none !important; font-family:'Cairo','Segoe UI',Tahoma,Arial,sans-serif; color:#1e3a5f !important; }
+            #printHeader .ph-box { width:100%; border:1.3px solid #3a6ea5; border-radius:2.2mm; overflow:hidden; direction:rtl; }
+            #printHeader .ph-title { font-family:'Amiri','Traditional Arabic','Noto Naskh Arabic','Times New Roman',serif; font-size:15px; font-weight:700; line-height:1; text-align:center; color:#2f5d8a !important; margin:0; padding:1.6mm 0 1.4mm; letter-spacing:.2px; background:#e4eefa !important; border-bottom:1px solid #a9c1d9; }
+            #printHeader .ph-row { display:flex; flex-wrap:wrap; align-items:stretch; }
+            #printHeader .ph-it { flex:1 1 auto; display:flex; align-items:center; gap:1.6mm; padding:1.2mm 2.6mm; font-size:10.5px; line-height:1.25; white-space:nowrap; border-inline-start:1px solid #a9c1d9; background:#fff !important; }
+            #printHeader .ph-it:first-child { border-inline-start:0; }
+            #printHeader .ph-it span { color:#2f5d8a !important; font-weight:800; }
+            #printHeader .ph-it b { color:#1e3a5f !important; font-weight:700; min-width:6mm; }
+            #printHeader .ph-it b:empty::after { content:"..........."; color:#a9c1d9; }
+            #printHeader .ph-box, #printHeader .ph-box * { -webkit-print-color-adjust:exact; print-color-adjust:exact; }
             #printTableWrap table { width:100%; border-collapse:collapse; table-layout:fixed; direction:rtl; border:1.6px solid #2f5d8a; }
             #printTableWrap th, #printTableWrap td { border:1px solid #a9c1d9 !important; padding:0 !important; text-align:center; vertical-align:middle; font-size:10px; line-height:1.2; color:#1e3a5f; overflow:hidden; }
             #printTableWrap td { height:6.4mm; font-weight:700; font-variant-numeric:tabular-nums; }
@@ -369,6 +368,73 @@
         body.dark-mode .po-btn{background:#334155;color:#e2e8f0}
         body.dark-mode .po-summary{background:#064e3b;color:#a7f3d0}
         @media print{ .po-overlay{display:none !important} }
+
+        /* ===== أدوات الصفحة: مفتاح الاتجاه + شريط حجم الخط + المعاينة ===== */
+        .pc-grid{display:grid;grid-template-columns:auto 1fr;gap:10px;margin-top:12px}
+        .pc-tile{display:flex;flex-direction:column;gap:8px;padding:10px 12px 9px;border-radius:16px;border:1.5px solid #e2e8f0;background:#f8fafc;min-width:0}
+        .pc-cap{display:flex;align-items:center;gap:6px;font-size:12px;font-weight:800;color:#475569}
+        .pc-cap i{color:#0d9488;font-size:12px}
+        .pc-sub{font-size:11px;font-weight:700;color:#0f766e;text-align:center;min-height:15px}
+        .or-sw{position:relative;width:88px;height:42px;border-radius:14px;margin:0 auto;cursor:grab;touch-action:none;user-select:none;-webkit-user-select:none;background:linear-gradient(135deg,#0b1220,#13213a);border:1.5px solid #22d3ee;box-shadow:0 0 0 1px rgba(34,211,238,.18),0 0 10px rgba(34,211,238,.55),0 0 22px rgba(34,211,238,.22),inset 0 0 10px rgba(34,211,238,.18);transition:box-shadow .25s,border-color .25s}
+        .or-sw:active{cursor:grabbing}
+        .or-sw:focus-visible{outline:2px solid #0d9488;outline-offset:3px}
+        .or-sw[data-o="portrait"]{border-color:#a78bfa;box-shadow:0 0 0 1px rgba(167,139,250,.2),0 0 10px rgba(167,139,250,.55),0 0 22px rgba(167,139,250,.22),inset 0 0 10px rgba(167,139,250,.18)}
+        .or-hint{position:absolute;top:50%;transform:translateY(-50%);display:flex;align-items:center;justify-content:center;width:34px;height:34px;color:rgba(165,243,252,.38);pointer-events:none}
+        .or-sw[data-o="portrait"] .or-hint{color:rgba(221,214,254,.38)}
+        .or-hint.l{left:4px}.or-hint.r{right:4px}
+        .or-hint svg{width:16px;height:16px}
+        .or-thumb{position:absolute;top:3px;left:3px;width:34px;height:34px;border-radius:11px;display:flex;align-items:center;justify-content:center;background:rgba(34,211,238,.12);border:1px solid rgba(34,211,238,.55);transition:transform .28s cubic-bezier(.3,1.3,.5,1),background .25s,border-color .25s;will-change:transform}
+        .or-sw[data-o="portrait"] .or-thumb{background:rgba(167,139,250,.14);border-color:rgba(167,139,250,.6)}
+        .or-sw.drag .or-thumb{transition:none}
+        .or-paper{position:relative;display:block;width:15px;height:20px;background:#fff;border-radius:2px;box-shadow:0 0 8px rgba(255,255,255,.55);clip-path:polygon(0 0,70% 0,100% 28%,100% 100%,0 100%);transition:transform .28s cubic-bezier(.3,1.3,.5,1)}
+        .or-paper::before,.or-paper::after{content:"";position:absolute;left:3px;right:3px;height:1.5px;border-radius:1px;background:#94a3b8}
+        .or-paper::before{top:9px}.or-paper::after{top:13px;right:6px}
+        .fs-wrap{position:relative;direction:ltr;padding:2px 2px 0}
+        .fs-row{display:flex;align-items:center;gap:8px}
+        .fs-a{font-weight:900;color:#64748b;line-height:1;font-family:'Cairo',sans-serif}
+        .fs-a.s{font-size:11px}.fs-a.b{font-size:19px}
+        .fs-badge{min-width:34px;text-align:center;padding:2px 7px;border-radius:9px;font-size:13px;font-weight:900;color:#0f766e;background:#ccfbf1;border:1px solid #5eead4;font-variant-numeric:tabular-nums}
+        .fs-range{-webkit-appearance:none;appearance:none;flex:1;min-width:0;height:26px;background:transparent;cursor:pointer;touch-action:pan-y;margin:0;--p:33%}
+        .fs-range::-webkit-slider-runnable-track{height:6px;border-radius:99px;background:linear-gradient(to right,#0d9488 0,#22d3ee var(--p),#cbd5e1 var(--p));box-shadow:0 0 8px rgba(34,211,238,.45)}
+        .fs-range::-moz-range-track{height:6px;border-radius:99px;background:#cbd5e1}
+        .fs-range::-moz-range-progress{height:6px;border-radius:99px;background:linear-gradient(to right,#0d9488,#22d3ee);box-shadow:0 0 8px rgba(34,211,238,.45)}
+        .fs-range::-webkit-slider-thumb{-webkit-appearance:none;width:22px;height:22px;margin-top:-8px;border-radius:50%;background:#fff;border:2px solid #22d3ee;box-shadow:0 0 0 3px rgba(34,211,238,.18),0 0 10px rgba(34,211,238,.7),0 2px 4px rgba(0,0,0,.25)}
+        .fs-range::-moz-range-thumb{width:18px;height:18px;border-radius:50%;background:#fff;border:2px solid #22d3ee;box-shadow:0 0 10px rgba(34,211,238,.7)}
+        .fs-range:focus-visible{outline:2px solid #0d9488;outline-offset:3px;border-radius:8px}
+        .fs-ticks{display:flex;justify-content:space-between;padding:0 31px 0 25px;margin-top:-3px;font-size:9.5px;font-weight:800;color:#94a3b8;font-variant-numeric:tabular-nums;direction:ltr}
+        .fs-ticks span.on{color:#0d9488}
+        .po-btn.ghost{background:#f0fdfa;color:#0f766e;border:1.5px solid #99f6e4}
+        .po-btn.ghost:hover{background:#ccfbf1}
+        .po-btn svg,.po-btn i{flex:none}
+        .pv-overlay{position:fixed;inset:0;z-index:80;display:none;flex-direction:column;background:#0f172a;direction:rtl;font-family:'Cairo',sans-serif}
+        .pv-overlay.open{display:flex}
+        .pv-bar{flex:none;display:flex;align-items:center;gap:8px;padding:10px 12px;background:linear-gradient(to left,#0f766e,#065f46);color:#fff;box-shadow:0 4px 14px rgba(0,0,0,.35)}
+        .pv-ic{flex:none;width:36px;height:36px;border-radius:12px;border:0;background:rgba(255,255,255,.14);color:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:14px;transition:background .15s}
+        .pv-ic:hover{background:rgba(255,255,255,.28)}
+        .pv-ic:focus-visible{outline:2px solid #fff;outline-offset:2px}
+        .pv-title{flex:1;min-width:0;display:flex;flex-direction:column;line-height:1.3}
+        .pv-title b{font-size:14px;font-weight:800}
+        .pv-title small{font-size:10.5px;font-weight:600;color:#a7f3d0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+        .pv-zoom{display:flex;gap:6px;direction:ltr}
+        .pv-save{flex:none !important;padding:9px 14px !important;font-size:13px !important;background:#fff !important;color:#065f46 !important;box-shadow:none !important}
+        .pv-save:hover{background:#ecfdf5 !important}
+        .pv-stage{flex:1;overflow:auto;-webkit-overflow-scrolling:touch;padding:14px 10px 28px;background:radial-gradient(circle at 50% 0,#1e293b,#0b1220)}
+        .pv-sheet{position:relative;margin:0 auto;background:#fff;border-radius:3px;box-shadow:0 10px 40px rgba(0,0,0,.55)}
+        .pv-sheet iframe{position:absolute;top:0;left:0;border:0;background:#fff;transform-origin:0 0}
+        .pv-breaks{position:absolute;inset:0;pointer-events:none}
+        .pv-breaks i{position:absolute;left:0;right:0;border-top:1.5px dashed #f59e0b;opacity:.85}
+        .pv-breaks i::after{content:attr(data-n);position:absolute;right:6px;top:-9px;padding:0 6px;border-radius:99px;background:#f59e0b;color:#fff;font:800 9px/15px 'Cairo',sans-serif}
+        body.dark-mode .pc-tile{background:#0f172a;border-color:#475569}
+        body.dark-mode .pc-cap{color:#cbd5e1}
+        body.dark-mode .pc-sub{color:#5eead4}
+        body.dark-mode .fs-badge{background:#134e4a;color:#99f6e4;border-color:#0d9488}
+        body.dark-mode .fs-a{color:#94a3b8}
+        body.dark-mode .po-btn.ghost{background:#134e4a;color:#99f6e4;border-color:#0f766e}
+        @media (max-width:380px){.pc-grid{grid-template-columns:1fr}}
+        @media print{ .pv-overlay{display:none !important} }
+
+        /* ===== السحب للرجوع خطوة واحدة ===== */
+        .pv-sheet iframe{pointer-events:none}
 
         /* إصدار 2.1.0: أدوات الإدخال والوضع الداكن */
         #nextGradeBtn{position:fixed;z-index:95;left:12px;bottom:10px;display:none;background:#059669;color:#fff;font-weight:800;font-size:16px;padding:10px 18px;border-radius:14px;box-shadow:0 6px 20px #0004}
@@ -499,21 +565,16 @@
 
     <!-- ترويسة الطباعة (تظهر فقط عند التصدير لـ PDF) -->
     <div id="printHeader" class="hidden print-only">
-        <h1 class="ph-title">سجل درجات الطلاب الرسمي</h1>
-        <div class="ph-rule"><i></i><b></b><i></i></div>
-        <table class="ph-info">
-            <colgroup><col style="width:26mm"><col><col style="width:28mm"><col><col style="width:26mm"><col></colgroup>
-            <tr>
-                <th>اسم المدرسة</th><td id="printSchoolName"></td>
-                <th>المادة الدراسية</th><td id="printSubjectName"></td>
-                <th>اسم المدرس</th><td id="printTeacherName"></td>
-            </tr>
-            <tr>
-                <th>السنة الدراسية</th><td id="printYear"></td>
-                <th>الصف والشعبة</th><td id="printClassSection"></td>
-                <th>تاريخ الطباعة</th><td id="printDate"></td>
-            </tr>
-        </table>
+        <div class="ph-box">
+            <h1 class="ph-title">سجل درجات الطلاب الرسمي</h1>
+            <div class="ph-row">
+                <div class="ph-it"><span>المدرسة:</span><b id="printSchoolName"></b></div>
+                <div class="ph-it"><span>المادة:</span><b id="printSubjectName"></b></div>
+                <div class="ph-it"><span>المدرس:</span><b id="printTeacherName"></b></div>
+                <div class="ph-it"><span>السنة الدراسية:</span><b id="printYear"></b></div>
+                <div class="ph-it"><span>الصف والشعبة:</span><b id="printClassSection"></b></div>
+            </div>
+        </div>
     </div>
 
         <header class="no-print bg-gradient-to-l from-blue-900 via-blue-800 to-indigo-900 text-white rounded-3xl p-4 sm:p-5 shadow-lg mb-3.5 relative overflow-hidden">
@@ -1200,7 +1261,7 @@
                 </button>
                 <div class="mt-3 pt-3 border-t border-slate-200 text-center space-y-0.5">
                     <p class="text-[12px] font-extrabold text-slate-700">سجل المدرس الإلكتروني</p>
-                    <p class="text-[11px] font-bold text-slate-500">الإصدار 2.9.5</p>
+                    <p class="text-[11px] font-bold text-slate-500">الإصدار 3.0.0</p>
                     <p class="text-[11px] font-semibold text-slate-500">جميع الحقوق محفوظة © 2026</p>
                     <p class="text-[11px] font-semibold text-slate-500">المطوّر: <span class="font-extrabold text-blue-800">مصطفى سامي</span></p>
                 </div>
@@ -1279,7 +1340,7 @@
             <div class="p-3 space-y-2">
                 <button onclick="closeModal('exportModal');openPrintOptions()" class="w-full flex items-center gap-3 bg-teal-50 hover:bg-teal-100 border border-teal-200 rounded-2xl px-3 py-3 text-right transition">
                     <span class="w-10 h-10 rounded-xl bg-teal-600 text-white flex items-center justify-center"><i class="fa-solid fa-file-pdf"></i></span>
-                    <span class="flex-1"><span class="block text-sm font-extrabold text-slate-800">ملف PDF</span><span class="block text-[11px] text-slate-500 font-semibold">للطباعة والمشاركة</span></span>
+                    <span class="flex-1"><span class="block text-sm font-extrabold text-slate-800">ملف PDF</span><span class="block text-[11px] text-slate-500 font-semibold">معاينة وحفظ مباشر</span></span>
                 </button>
                 <button onclick="closeModal('exportModal');exportToExcel()" class="w-full flex items-center gap-3 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 rounded-2xl px-3 py-3 text-right transition">
                     <span class="w-10 h-10 rounded-xl bg-emerald-600 text-white flex items-center justify-center"><i class="fa-solid fa-file-excel"></i></span>
@@ -1292,11 +1353,11 @@
     <div id="printOptModal" class="po-overlay" onclick="if(event.target===this)closePrintOptions()">
         <div class="po-card" role="dialog" aria-modal="true" aria-labelledby="poTitle">
             <div class="po-head">
-                <h3 id="poTitle"><i class="fa-solid fa-print"></i> خيارات الطباعة</h3>
+                <h3 id="poTitle"><i class="fa-solid fa-file-pdf"></i> تصدير PDF</h3>
                 <button type="button" class="po-x" onclick="closePrintOptions()" aria-label="إغلاق"><i class="fa-solid fa-xmark"></i></button>
             </div>
             <div class="po-body">
-                <p class="po-label">ماذا تريد أن تطبع؟</p>
+                <p class="po-label">ماذا تريد أن تُصدّر؟</p>
                 <div id="poPresets" class="po-presets"></div>
                 <div id="poCustomBox" class="po-custom" hidden>
                     <div class="po-custom-top">
@@ -1304,6 +1365,29 @@
                         <span class="po-links"><button type="button" onclick="poSelectAll(true)">تحديد الكل</button><button type="button" onclick="poSelectAll(false)">مسح</button></span>
                     </div>
                     <div id="poChips" class="po-chips"></div>
+                </div>
+                <div class="pc-grid">
+                    <div class="pc-tile">
+                        <span class="pc-cap"><i class="fa-solid fa-file-lines"></i> اتجاه الورقة</span>
+                        <div id="orSwitch" class="or-sw" dir="ltr" role="switch" aria-checked="true" aria-label="اتجاه الورقة: اسحب يميناً للأفقي ويساراً للعمودي" tabindex="0" data-o="landscape">
+                            <span class="or-hint l"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round"><path d="M7 3h7l4 4v14H7z"/><path d="M14 3v4h4"/></svg></span>
+                            <span class="or-hint r"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round"><path d="M3 7v10h18V7z" transform="rotate(0)"/><path d="M17 7h4"/><path d="M6 11h8M6 14h5"/></svg></span>
+                            <span class="or-thumb"><span class="or-paper"></span></span>
+                        </div>
+                        <span id="orLabel" class="pc-sub">أفقي</span>
+                    </div>
+                    <div class="pc-tile">
+                        <span class="pc-cap"><i class="fa-solid fa-text-height"></i> حجم الخط <span id="fsAutoTag" style="margin-inline-start:auto;font-size:10px;color:#0d9488"></span></span>
+                        <div class="fs-wrap">
+                            <div class="fs-row">
+                                <span class="fs-a s">أ</span>
+                                <input type="range" id="fsRange" class="fs-range" min="8" max="14" step="1" value="10" aria-label="حجم الخط في الملف">
+                                <span class="fs-a b">أ</span>
+                            </div>
+                            <div id="fsTicks" class="fs-ticks"></div>
+                        </div>
+                        <span class="pc-sub"><span id="fsBadge" class="fs-badge">10</span></span>
+                    </div>
                 </div>
                 <label class="po-switch-row">
                     <span class="po-switch-txt"><b>إظهار رقم الصفحة</b><small>«صفحة 1 من 3» أسفل كل ورقة</small></span>
@@ -1313,10 +1397,23 @@
                 <div id="poSummary" class="po-summary"></div>
             </div>
             <div class="po-foot">
-                <button type="button" id="poPrintBtn" class="po-btn primary" onclick="runPrintFromOptions()"><i class="fa-solid fa-print"></i> طباعة / حفظ PDF</button>
-                <button type="button" class="po-btn" onclick="closePrintOptions()">إلغاء</button>
+                <button type="button" id="poPreviewBtn" class="po-btn ghost" onclick="openPdfPreview()"><i class="fa-solid fa-eye"></i> معاينة</button>
+                <button type="button" id="poPrintBtn" class="po-btn primary" onclick="runPrintFromOptions()"><i class="fa-solid fa-file-arrow-down"></i> حفظ PDF</button>
             </div>
         </div>
+    </div>
+
+    <div id="pdfPreview" class="pv-overlay" role="dialog" aria-modal="true" aria-label="معاينة PDF">
+        <div class="pv-bar">
+            <button type="button" class="pv-ic" onclick="closePdfPreview()" aria-label="رجوع"><i class="fa-solid fa-arrow-right"></i></button>
+            <div class="pv-title"><b>معاينة PDF</b><small id="pvMeta"></small></div>
+            <div class="pv-zoom">
+                <button type="button" class="pv-ic" onclick="pvZoom(-.15)" aria-label="تصغير"><i class="fa-solid fa-magnifying-glass-minus"></i></button>
+                <button type="button" class="pv-ic" onclick="pvZoom(.15)" aria-label="تكبير"><i class="fa-solid fa-magnifying-glass-plus"></i></button>
+            </div>
+            <button type="button" class="po-btn pv-save" onclick="savePdf()"><i class="fa-solid fa-file-arrow-down"></i> حفظ PDF</button>
+        </div>
+        <div class="pv-stage" id="pvStage"><div class="pv-sheet" id="pvSheet"><iframe id="pvFrame" title="معاينة" tabindex="-1"></iframe><div class="pv-breaks" id="pvBreaks"></div></div></div>
     </div>
 
     <div id="confirmModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[60] hidden items-center justify-center p-4">
@@ -1873,7 +1970,6 @@
             document.getElementById('printTeacherName').textContent = teacherName || '';
             document.getElementById('printYear').textContent = appState.selectedYear || '';
             document.getElementById('printClassSection').textContent = `${appState.selectedClass || ''} - ${appState.selectedSection || ''}`;
-            document.getElementById('printDate').textContent = new Date().toLocaleDateString('ar-IQ');
         }
 
         function populateSelectors() {
@@ -2878,7 +2974,7 @@
 
         // النسخ الاحتياطي JSON
         async function buildBackupText() {
-            appState.schemaVersion = SCHEMA_VERSION; appState.appVersion = '2.9.5';
+            appState.schemaVersion = SCHEMA_VERSION; appState.appVersion = '3.0.0';
             const text = JSON.stringify(appState, null, 2);
             const pass = prompt('اختياري: اكتب كلمة سر لتشفير النسخة (فيها بيانات طلاب).\nاتركها فارغة لنسخة غير مشفرة.\nتحذير: إن نسيت الكلمة لا يمكن استرجاع النسخة.');
             if (pass === null) return null;
@@ -3393,7 +3489,8 @@
             const cols = groups.reduce((a, g) => a.concat(g.cols), []);
             const kind = printKind;
             const isAvgCol = c => ['avg', 'mid', 'fin'].includes(kind(c));   // معدل ف1 / نصف السنة / معدل ف2 / السعي
-            const H3 = 24;                       // ارتفاع صف أسماء الأعمدة (ملم)
+            const FS = pdfFontSize(cols.length), PORT = poState.orient === 'portrait';
+            const H3 = +(16 + FS * 0.8).toFixed(1);   // ارتفاع صف أسماء الأعمدة (ملم) حسب حجم الخط
             const hs = rs => (rs === 3 ? 7.5 + 6.5 + H3 : 6.5 + H3) + 'mm';   // ارتفاع الخلية الممتدة على صفوف
 
             const blocks = [];
@@ -3430,16 +3527,16 @@
             });
 
             // أبعاد الجدول بالملم (A4 أفقي = 281mm عرض مفيد): كلما قلّت الأعمدة كبر الخط والعرض
-            const n = cols.length, PAGE = 281, numMm = 9;
-            let nameMm = n >= 20 ? 48 : (n >= 10 ? 58 : 72);
+            const n = cols.length, PAGE = PORT ? 196 : 283, numMm = PORT ? 8 : 9;
+            let nameMm = PORT ? (n >= 20 ? 38 : (n >= 10 ? 46 : 56)) : (n >= 20 ? 48 : (n >= 10 ? 58 : 72));
             const maxCol = n <= 6 ? 24 : (n <= 14 ? 16 : 14);
             const colMm = Math.min((PAGE - numMm - nameMm) / n, maxCol);
             const total = numMm + nameMm + colMm * n;
-            const target = Math.max(total, 215);
+            const target = Math.max(total, PORT ? 165 : 215);
             nameMm += target - total;
             const ph = document.getElementById('printHeader');
             if (ph) ph.style.width = target.toFixed(1) + 'mm';
-            const sz = n <= 6 ? 'sz-l' : (n <= 14 ? 'sz-m' : '');
+            const sz = '';
 
             let h = '<table class="' + sz + '" style="width:' + target.toFixed(1) + 'mm"><colgroup><col style="width:' + numMm + 'mm"><col style="width:' + nameMm.toFixed(1) + 'mm">';
             cols.forEach(() => { h += '<col style="width:' + colMm.toFixed(2) + 'mm">'; });
@@ -3491,7 +3588,7 @@
 
         // ---------- نافذة خيارات الطباعة ----------
         const PO_KEY = 'teacher_print_opts';
-        const poState = { preset: 'full', custom: new Set(), pageNum: true };
+        const poState = { preset: 'full', custom: new Set(), pageNum: true, orient: 'landscape', fs: null };
         const PO_PRESETS = [
             { id: 'full', icon: 'fa-table-cells', title: 'السجل الكامل', pick: gs => gs },
             { id: 'sem1', icon: 'fa-1', title: 'الفصل الأول', pick: gs => gs.filter(g => g.top === 'الفصل الأول' || g.name === 'نصف السنة') },
@@ -3531,10 +3628,12 @@
             const n = poCount(sel);
             const stu = (getCurrentSectionObj() || { students: [] }).students.length;
             document.getElementById('poSummary').innerHTML = n
-                ? '<i class="fa-solid fa-circle-info"></i> سيتم طباعة <b>' + n + '</b> عمود لـ <b>' + stu + '</b> طالب على ورق A4 أفقي'
-                : '<i class="fa-solid fa-triangle-exclamation"></i> اختر عموداً واحداً على الأقل';
+                ? '<i class="fa-solid fa-circle-info"></i><span>سيتم تصدير <b>' + n + '</b> عمود لـ <b>' + stu + '</b> طالب على ورق A4 <b>' + (poState.orient === 'portrait' ? 'عمودي' : 'أفقي') + '</b></span>'
+                : '<i class="fa-solid fa-triangle-exclamation"></i><span>اختر عموداً واحداً على الأقل</span>';
             document.getElementById('poSummary').classList.toggle('warn', !n);
             document.getElementById('poPrintBtn').disabled = !n;
+            document.getElementById('poPreviewBtn').disabled = !n;
+            poSyncTools(n);
             document.getElementById('poPageNum').checked = poState.pageNum;
         }
         function poPick(id) {
@@ -3558,33 +3657,252 @@
                     if (PO_PRESETS.some(p => p.id === saved.preset)) poState.preset = saved.preset;
                     poState.custom = new Set((saved.custom || []).filter(x => names.has(x)));
                     poState.pageNum = saved.pageNum !== false;
+                    if (saved.orient === 'portrait' || saved.orient === 'landscape') poState.orient = saved.orient;
+                    poState.fs = (saved.fs >= 8 && saved.fs <= 14) ? saved.fs : null;
                 }
             } catch (e) {}
             const cur = PO_PRESETS.find(p => p.id === poState.preset);
             if (cur && cur.pick && !poCount(cur.pick(getPrintGroups()))) poState.preset = 'full';
             document.getElementById('printOptModal').classList.add('open');
+            poInitTools();
             poRender();
         }
         function closePrintOptions() { document.getElementById('printOptModal').classList.remove('open'); }
-        function applyPrintPageStyle(pageNum) {
-            let st = document.getElementById('printPageStyle');
-            if (!st) { st = document.createElement('style'); st.id = 'printPageStyle'; document.head.appendChild(st); }
-            st.textContent = pageNum
-                ? '@page{size:A4 landscape;margin:8mm 8mm 14mm 8mm;@bottom-center{content:"صفحة " counter(page) " من " counter(pages);font-family:Cairo,Tahoma,Arial,sans-serif;font-size:10px;font-weight:700;color:#3a6ea5;}}'
-                : '@page{size:A4 landscape;margin:8mm}';
+        // ---------- اتجاه الورقة + حجم الخط ----------
+        function pdfAutoFs(n) {
+            let f = n <= 6 ? 13 : (n <= 14 ? 12 : (n <= 22 ? 10 : 9));
+            if (poState.orient === 'portrait' && n > 14) f -= 1;
+            return Math.max(8, Math.min(14, f));
         }
-        function doPrint(sel, pageNum) {
-            updateHeaderUI(); buildPrintTable(sel); applyPrintPageStyle(pageNum);
-            const ready = (document.fonts && document.fonts.ready) ? document.fonts.ready.catch(() => {}) : Promise.resolve();
-            ready.then(() => setTimeout(() => window.print(), 150));
+        function pdfColCount() {
+            try { const gs = getPrintGroups(), names = poSelectedNames(); return poCount(gs.filter(g => names.has(g.name))); } catch (e) { return 0; }
+        }
+        function pdfFontSize(n) { return poState.fs || pdfAutoFs(n == null ? pdfColCount() : n); }
+        function poSyncTools() {
+            const sw = document.getElementById('orSwitch');
+            if (sw) {
+                sw.dataset.o = poState.orient;
+                sw.setAttribute('aria-checked', poState.orient === 'landscape');
+                const th = sw.querySelector('.or-thumb'), pp = sw.querySelector('.or-paper');
+                if (!sw.classList.contains('drag')) th.style.transform = poState.orient === 'landscape' ? 'translateX(46px)' : 'translateX(0)';
+                pp.style.transform = poState.orient === 'landscape' ? 'rotate(90deg)' : 'rotate(0)';
+                document.getElementById('orLabel').textContent = poState.orient === 'landscape' ? 'أفقي' : 'عمودي';
+            }
+            const r = document.getElementById('fsRange');
+            if (r) {
+                const v = pdfFontSize();
+                r.value = v;
+                r.style.setProperty('--p', ((v - 8) / 6 * 100) + '%');
+                document.getElementById('fsBadge').textContent = v;
+                document.getElementById('fsAutoTag').textContent = poState.fs ? '' : 'تلقائي';
+                const t = document.getElementById('fsTicks');
+                if (!t.childElementCount) t.innerHTML = [8, 9, 10, 11, 12, 13, 14].map(x => '<span data-v="' + x + '">' + x + '</span>').join('');
+                [...t.children].forEach(c => c.classList.toggle('on', +c.dataset.v === v));
+            }
+        }
+        function poSetOrient(o) {
+            if (o !== 'portrait' && o !== 'landscape') return;
+            poState.orient = o; poRender();
+        }
+        function poInitTools() {
+            const sw = document.getElementById('orSwitch');
+            if (sw && !sw._ready) {
+                sw._ready = true;
+                const th = sw.querySelector('.or-thumb');
+                const MAX = 46;
+                let sx = 0, base = 0, pos = 0, down = false, moved = false;
+                sw.addEventListener('pointerdown', e => {
+                    down = true; moved = false; sx = e.clientX;
+                    base = poState.orient === 'landscape' ? MAX : 0; pos = base;
+                    sw.classList.add('drag');
+                    try { sw.setPointerCapture(e.pointerId); } catch (_) {}
+                });
+                sw.addEventListener('pointermove', e => {
+                    if (!down) return;
+                    const dx = e.clientX - sx;
+                    if (Math.abs(dx) > 4) moved = true;
+                    pos = Math.max(0, Math.min(MAX, base + dx));
+                    th.style.transform = 'translateX(' + pos + 'px)';
+                    const land = pos > MAX / 2;
+                    sw.querySelector('.or-paper').style.transform = land ? 'rotate(90deg)' : 'rotate(0)';
+                });
+                const end = () => {
+                    if (!down) return;
+                    down = false; sw.classList.remove('drag');
+                    const o = moved ? (pos > MAX / 2 ? 'landscape' : 'portrait') : (poState.orient === 'landscape' ? 'portrait' : 'landscape');
+                    poSetOrient(o);
+                };
+                sw.addEventListener('pointerup', end);
+                sw.addEventListener('pointercancel', end);
+                sw.addEventListener('keydown', e => {
+                    if (e.key === 'ArrowRight') { e.preventDefault(); poSetOrient('landscape'); }
+                    else if (e.key === 'ArrowLeft') { e.preventDefault(); poSetOrient('portrait'); }
+                    else if (e.key === ' ' || e.key === 'Enter') { e.preventDefault(); poSetOrient(poState.orient === 'landscape' ? 'portrait' : 'landscape'); }
+                });
+            }
+            const r = document.getElementById('fsRange');
+            if (r && !r._ready) {
+                r._ready = true;
+                r.addEventListener('input', () => { poState.fs = +r.value; poRender(); });
+            }
+        }
+
+        // ---------- بناء مستند PDF (للمعاينة والحفظ) ----------
+        function collectPrintCss() {
+            let css = '';
+            for (const sh of document.styleSheets) {
+                let rules; try { rules = sh.cssRules; } catch (e) { continue; }
+                if (!rules) continue;
+                for (const r of rules) {
+                    if (r.type === 1 || !r.media || !/print/.test(r.media.mediaText)) continue;
+                    for (const rr of r.cssRules) {
+                        if (rr.selectorText && /printTableWrap|printHeader/.test(rr.selectorText) && !/dark-mode/.test(rr.selectorText)) css += rr.cssText + '\n';
+                    }
+                }
+            }
+            return css;
+        }
+        function pdfOverrideCss(fs) {
+            const h = (0.9 + fs * 0.42).toFixed(1) + 'mm';
+            return '#printTableWrap table:not(.pr-sum) td{font-size:' + fs + 'px!important;height:' + h + '!important}'
+                + '#printTableWrap table:not(.pr-sum) td.nm{font-size:' + fs + 'px!important}'
+                + '#printTableWrap table:not(.pr-sum) .vt,#printTableWrap table:not(.pr-sum) .vt.ar{font-size:' + fs + 'px!important}'
+                + '#printTableWrap table:not(.pr-sum) thead tr.h1 th:not(.c-nm):not(.c-sn){font-size:' + (fs + 1.5) + 'px!important}'
+                + '#printTableWrap table:not(.pr-sum) thead tr.h2 th{font-size:' + (fs + 0.5) + 'px!important}';
+        }
+        function pdfPageCss(pageNum) {
+            const o = poState.orient === 'portrait' ? 'portrait' : 'landscape';
+            return pageNum
+                ? '@page{size:A4 ' + o + ';margin:5mm 7mm 12mm 7mm;@bottom-center{content:"صفحة " counter(page) " من " counter(pages);font-family:Cairo,Tahoma,Arial,sans-serif;font-size:10px;font-weight:700;color:#3a6ea5;}}'
+                : '@page{size:A4 ' + o + ';margin:5mm 7mm}';
+        }
+        function buildPdfHtml(sel, pageNum, forPreview) {
+            updateHeaderUI(); buildPrintTable(sel);
+            const ph = document.getElementById('printHeader');
+            const header = ph ? ph.outerHTML.replace(/\bhidden\b|\bprint-only\b/g, '') : '';
+            const wrap = document.getElementById('printTableWrap').innerHTML;
+            const fs = pdfFontSize();
+            const fontLink = (document.querySelector('link[href*="fonts.googleapis.com/css2"]') || {}).href || '';
+            const pw = poState.orient === 'portrait' ? 210 : 297;
+            return '<!doctype html><html lang="ar" dir="rtl"><head><meta charset="utf-8">'
+                + (fontLink ? '<link rel="stylesheet" href="' + fontLink + '">' : '')
+                + '<style>*{box-sizing:border-box}html,body{margin:0;padding:0;background:#fff}'
+                + 'body{font-family:Cairo,"Segoe UI",Tahoma,Arial,sans-serif;direction:rtl;-webkit-print-color-adjust:exact;print-color-adjust:exact}'
+                + (forPreview ? 'body{width:' + pw + 'mm;padding:5mm 7mm ' + (pageNum ? '12mm' : '5mm') + '}' : '')
+                + collectPrintCss() + pdfOverrideCss(fs) + pdfPageCss(pageNum) + '</style></head><body>'
+                + header + '<div id="printTableWrap">' + wrap + '</div></body></html>';
+        }
+        // ملء ورقة A4 العمودية: 33 طالباً في الصفحة، وإذا قلّ العدد تكبر الصفوف لتملأ الورقة حتى الأسفل
+        const PDF_ROWS_PER_PAGE = 33;
+        function pdfFit(fr) {
+            if (poState.orient !== 'portrait') return;
+            const d = fr.contentDocument; if (!d) return;
+            const mm = 96 / 25.4;
+            const tbl = d.querySelector('#printTableWrap table:not(.pr-sum)');
+            if (!tbl || !tbl.tBodies[0] || !tbl.tHead) return;
+            const rows = [...tbl.tBodies[0].rows], N = rows.length; if (!N) return;
+            const U = (297 - 5 - (poState.pageNum ? 12 : 5)) * mm;
+            const hdr = d.getElementById('printHeader');
+            const Hh = hdr ? hdr.offsetHeight + parseFloat(d.defaultView.getComputedStyle(hdr).marginBottom || 0) : 0;
+            const Ht = tbl.tHead.offsetHeight;
+            const sum = d.querySelector('.pr-sum');
+            const Hs = sum ? sum.offsetHeight + 5 * mm : 0;
+            const K = PDF_ROWS_PER_PAGE;
+            const avail = N > K ? (U - Hh - Ht) : (U - Hh - Ht - Hs);
+            const cnt = N > K ? K : N;
+            let r = Math.min(Math.max(avail / cnt - 1, 3.6 * mm), 12 * mm);
+            const apply = v => rows.forEach(tr => tr.querySelectorAll('td').forEach(td => td.style.setProperty('height', v + 'px', 'important')));
+            apply(r);
+            for (let i = 0; i < 3; i++) {   // تصحيح فروق حدود الجدول
+                const actual = rows.slice(0, cnt).reduce((a, tr) => a + tr.getBoundingClientRect().height, 0);
+                const want = Math.min(avail - 2, cnt * 12 * mm);
+                if (Math.abs(actual - want) < 0.5) break;
+                r = Math.max(3.6 * mm, r * (want / actual)); apply(r);
+            }
+        }
+        function pdfFrameReady(fr, html) {
+            return new Promise(res => {
+                fr.onload = () => {
+                    const d = fr.contentDocument;
+                    const f = (d && d.fonts && d.fonts.ready) ? d.fonts.ready.catch(() => {}) : Promise.resolve();
+                    Promise.race([f, new Promise(r => setTimeout(r, 2500))]).then(() => setTimeout(() => { try { pdfFit(fr); } catch (e) {} res(); }, 80));
+                };
+                fr.srcdoc = html;
+            });
+        }
+
+        // ---------- المعاينة ----------
+        const pv = { zoom: null, fit: 1, w: 0, h: 0, pages: 1 };
+        function pvApply() {
+            const st = document.getElementById('pvStage'), fr = document.getElementById('pvFrame'), sh = document.getElementById('pvSheet');
+            const sc = pv.zoom || pv.fit;
+            fr.style.width = pv.w + 'px'; fr.style.height = pv.h + 'px';
+            fr.style.transform = 'scale(' + sc + ')';
+            sh.style.width = (pv.w * sc) + 'px'; sh.style.height = (pv.h * sc) + 'px';
+            const br = document.getElementById('pvBreaks');
+            const per = pv.usable * sc;
+            let html = '';
+            for (let i = 1; i < pv.pages; i++) html += '<i style="top:' + (i * per).toFixed(1) + 'px" data-n="' + (i + 1) + '"></i>';
+            br.innerHTML = html;
+        }
+        function pvZoom(d) {
+            const cur = pv.zoom || pv.fit;
+            pv.zoom = Math.max(0.2, Math.min(2.5, +(cur + d).toFixed(2)));
+            pvApply();
+        }
+        async function openPdfPreview() {
+            const sel = poSelectedNames(); if (!sel.size) return;
+            poState.pageNum = document.getElementById('poPageNum').checked;
+            const ov = document.getElementById('pdfPreview'), fr = document.getElementById('pvFrame');
+            const mm = 96 / 25.4, land = poState.orient !== 'portrait';
+            pv.w = Math.round((land ? 297 : 210) * mm);
+            const pageH = (land ? 210 : 297) * mm;
+            pv.usable = pageH - (5 + (poState.pageNum ? 12 : 5)) * mm;
+            ov.classList.add('open');
+            document.getElementById('pvMeta').textContent = 'جارٍ التحضير…';
+            fr.style.height = '10px';
+            await pdfFrameReady(fr, buildPdfHtml(sel, poState.pageNum, true));
+            const d = fr.contentDocument;
+            pv.h = Math.max(pageH, Math.ceil(d.documentElement.scrollHeight));
+            pv.pages = Math.max(1, Math.ceil((pv.h - (poState.pageNum ? 17 : 10) * mm) / pv.usable - 0.02));
+            pv.h = Math.max(pageH, Math.ceil(pv.pages * pv.usable + (poState.pageNum ? 17 : 10) * mm));
+            const st = document.getElementById('pvStage');
+            pv.fit = Math.min(1, (st.clientWidth - 20) / pv.w);
+            pv.zoom = null;
+            pvApply();
+            st.scrollTop = 0;
+            document.getElementById('pvMeta').textContent = 'A4 ' + (land ? 'أفقي' : 'عمودي') + ' • خط ' + pdfFontSize() + ' • ' + pv.pages + (pv.pages === 1 ? ' صفحة' : ' صفحات');
+        }
+        function closePdfPreview() { document.getElementById('pdfPreview').classList.remove('open'); document.getElementById('pvFrame').srcdoc = ''; }
+
+        // ---------- الحفظ كـ PDF ----------
+        async function savePdf() {
+            const sel = poSelectedNames(); if (!sel.size) return;
+            poState.pageNum = document.getElementById('poPageNum').checked;
+            try { localStorage.setItem(PO_KEY, JSON.stringify({ preset: poState.preset, custom: [...poState.custom], pageNum: poState.pageNum, orient: poState.orient, fs: poState.fs })); } catch (e) {}
+            let fr = document.getElementById('pdfPrintFrame');
+            if (fr) fr.remove();
+            fr = document.createElement('iframe');
+            fr.id = 'pdfPrintFrame'; fr.setAttribute('aria-hidden', 'true'); fr.tabIndex = -1;
+            fr.style.cssText = 'position:fixed;left:-10000px;top:0;width:' + (poState.orient === 'portrait' ? '210mm' : '297mm') + ';height:' + (poState.orient === 'portrait' ? '297mm' : '210mm') + ';border:0;pointer-events:none';
+            document.body.appendChild(fr);
+            showToast('جارٍ تجهيز الملف… اختر «حفظ كملف PDF»');
+            try {
+                await pdfFrameReady(fr, buildPdfHtml(sel, poState.pageNum, false));
+                fr.contentWindow.focus();
+                fr.contentWindow.print();
+            } catch (e) {
+                // احتياط للمتصفحات التي لا تدعم الطباعة من إطار مخفي
+                let st = document.getElementById('printPageStyle');
+                if (!st) { st = document.createElement('style'); st.id = 'printPageStyle'; document.head.appendChild(st); }
+                st.textContent = pdfPageCss(poState.pageNum) + pdfOverrideCss(pdfFontSize());
+                updateHeaderUI(); buildPrintTable(sel);
+                setTimeout(() => window.print(), 150);
+            }
         }
         function runPrintFromOptions() {
-            poState.pageNum = document.getElementById('poPageNum').checked;
-            try { localStorage.setItem(PO_KEY, JSON.stringify({ preset: poState.preset, custom: [...poState.custom], pageNum: poState.pageNum })); } catch (e) {}
-            const sel = poSelectedNames();
-            if (!sel.size) return;
-            closePrintOptions();
-            doPrint(sel, poState.pageNum);
+            if (!poSelectedNames().size) return;
+            savePdf();
         }
         function exportToPDF() { openPrintOptions(); }
 
@@ -3812,7 +4130,7 @@
     <script>
         // تسجيل Service Worker + إشعار التحديث (شريط علوي): يظهر الإصدار الجديد، وعند الضغط يتحدث التطبيق ثم يؤكد
         (function () {
-            const APP_VERSION = '2.9.5';
+            const APP_VERSION = '3.0.0';
             const UPD_KEY = 'teacher_app_updated_to';
             const $ = id => document.getElementById(id);
             const ICON_UPD = '<svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 0 1-15.5 6.2L3 16"/><path d="M3 12A9 9 0 0 1 18.5 5.8L21 8"/><path d="M21 3v5h-5"/><path d="M3 21v-5h5"/></svg>';
@@ -4305,6 +4623,119 @@
   // شبكة أمان: إن تسلل بريد إلى خانة بحث نمسحه
   function clean(){ ['searchInput','conductSearch'].forEach(function(id){ var e=document.getElementById(id); if(e && e!==document.activeElement && /@/.test(e.value)){ e.value=''; e.dispatchEvent(new Event('input')); } }); }
   [200,800,2000].forEach(function(ms){ setTimeout(clean,ms); });
+})();
+</script>
+
+<script>
+/* ===== الرجوع خطوة واحدة: سحب من حافة اليمين + زر الرجوع في الجهاز + Esc ===== */
+(function () {
+  var EDGE = 30, TRIGGER = 90, MAX_DY_RATIO = 0.9;
+  var depth = 0, ignore = 0, raf = 0;
+
+  function layers() {
+    var L = [];
+    document.querySelectorAll('[id$="Modal"]').forEach(function (m) {
+      if (m.id === 'printOptModal') { if (m.classList.contains('open')) L.push(m); }
+      else if (!m.classList.contains('hidden')) L.push(m);
+    });
+    var dp = document.getElementById('cdDatePicker'); if (dp && !dp.classList.contains('hidden')) L.push(dp);
+    var pv = document.getElementById('pdfPreview'); if (pv && pv.classList.contains('open')) L.push(pv);
+    document.querySelectorAll('.cs-ov').forEach(function (o) { L.push(o); });
+    return L;
+  }
+  var FALLBACK_Z = { pdfPreview: 80, printOptModal: 70, cdDatePicker: 65, confirmModal: 60 };
+  function topLayer() {
+    var L = layers(), best = null, bz = -1;
+    L.forEach(function (el, i) {
+      var z = parseInt(getComputedStyle(el).zIndex, 10);
+      if (isNaN(z)) z = el.classList.contains('cs-ov') ? 80 : (FALLBACK_Z[el.id] || 50);
+      z = z * 1000 + i;
+      if (z >= bz) { bz = z; best = el; }
+    });
+    return best;
+  }
+  function closeLayer(el) {
+    if (!el) return false;
+    try {
+      if (el.id === 'pdfPreview') { closePdfPreview(); return true; }
+      if (el.id === 'printOptModal') { closePrintOptions(); return true; }
+      if (el.classList.contains('cs-ov')) {
+        var x = el.querySelector('[data-x],.cs-x');
+        if (x) x.click(); else el.remove();
+        return true;
+      }
+      var btn = Array.prototype.find.call(el.querySelectorAll('[onclick]'), function (b) {
+        var o = b.getAttribute('onclick') || '';
+        return o.trim().replace(/;$/, '') === "closeModal('" + el.id + "')";
+      });
+      if (btn) btn.click(); else closeModal(el.id);
+      return true;
+    } catch (e) { return false; }
+  }
+  window.goBackOneStep = function () { return closeLayer(topLayer()); };
+
+  /* مزامنة سجل المتصفح مع الطبقات المفتوحة حتى يغلق زر الرجوع في الجهاز خطوة واحدة */
+  function sync() {
+    raf = 0;
+    var n = layers().length;
+    try {
+      if (n > depth) { for (var i = depth; i < n; i++) history.pushState({ layer: i + 1 }, ''); depth = n; }
+      else if (n < depth) { var d = depth - n; depth = n; ignore++; history.go(-d); }
+    } catch (e) { depth = n; }
+  }
+  new MutationObserver(function () { if (!raf) raf = requestAnimationFrame(sync); })
+    .observe(document.body, { subtree: true, childList: true, attributes: true, attributeFilter: ['class'] });
+  window.addEventListener('popstate', function () {
+    if (ignore) { ignore--; return; }
+    if (depth > 0) { depth--; closeLayer(topLayer()); }
+  });
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape' && !e.defaultPrevented && layers().length) closeLayer(topLayer());
+  });
+
+  /* السحب من حافة اليمين نحو الداخل (للجهاز العربي والإنجليزي) */
+  var t = null;
+  function reset(el) { if (el) { el.style.transition = ''; el.style.transform = ''; el.style.willChange = ''; } }
+  document.addEventListener('touchstart', function (e) {
+    t = null;
+    if (e.touches.length !== 1) return;
+    var p = e.touches[0];
+    if (p.clientX < window.innerWidth - EDGE) return;
+    var el = topLayer(); if (!el) return;
+    t = { x: p.clientX, y: p.clientY, time: Date.now(), on: false, el: el, dx: 0 };
+  }, { passive: true });
+  document.addEventListener('touchmove', function (e) {
+    if (!t) return;
+    var p = e.touches[0], dx = t.x - p.clientX, dy = Math.abs(p.clientY - t.y);
+    if (!t.on) {
+      if (dx > 10 && dy < dx * MAX_DY_RATIO) { t.on = true; t.el.style.willChange = 'transform'; }
+      else if (dy > 22) { t = null; return; }
+      else return;
+    }
+    t.dx = Math.max(0, dx);
+    t.el.style.transition = 'none';
+    t.el.style.transform = 'translateX(' + (-t.dx) + 'px)';   // الصفحة تتبع الإصبع
+    if (e.cancelable) e.preventDefault();
+  }, { passive: false });
+  function finish(commit) {
+    var s = t; t = null;
+    if (!s || !s.on) return;
+    var el = s.el, W = window.innerWidth;
+    el.style.transition = 'transform .2s ease-out';
+    if (commit) {
+      el.style.transform = 'translateX(' + (-W) + 'px)';
+      setTimeout(function () { closeLayer(el); setTimeout(function () { reset(el); }, 60); }, 190);
+    } else {
+      el.style.transform = 'translateX(0)';
+      setTimeout(function () { reset(el); }, 210);
+    }
+  }
+  document.addEventListener('touchend', function () {
+    if (!t) return;
+    var speed = t.dx / Math.max(1, Date.now() - t.time);
+    finish(t.dx >= Math.min(TRIGGER, window.innerWidth * 0.25) || (t.dx > 30 && speed > 0.5));
+  }, { passive: true });
+  document.addEventListener('touchcancel', function () { finish(false); }, { passive: true });
 })();
 </script>
 </body>
